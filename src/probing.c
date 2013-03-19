@@ -138,30 +138,10 @@ static int probing_recv_packet(probing_t *probing, const u_char *packet,
 
 	return recv_cb(probing->last_packet, probing->last_packet_len,
 		       packet + ETH_HDR_LEN, packet_len - ETH_HDR_LEN);
-
-	if (ip->ip_p == IPPROTO_TCP) {
-		return 0;
-	} else if (ip->ip_p == IPPROTO_ICMP) {
-		struct icmp_hdr *icmp;
-		
-		icmp = (struct icmp_hdr *) (packet + len);
-		len += sizeof(*icmp) + 4;
-		
-		if (icmp->icmp_type == ICMP_UNREACH ||
-		    icmp->icmp_type == ICMP_TIMEXCEED) {
-			icmp_ip = (struct ip_hdr *) (packet+len);
-			last_ip = (struct ip_hdr *) probing->last_packet;
-			if (icmp_ip->ip_dst == last_ip->ip_dst)
-				return 0;
-			else
-				return -1;
-		}
-	} 
-	return -1;
 }
 
 static int probing_recv(probing_t *probing, struct timeval *recv_tv,
-			struct addr *from, probe_recv_cb_t recv_cb) 
+			struct addr *from, probe_recv_cb_t recv_cb)
 {
 	int			 ret;
 	const u_char		*packet;
