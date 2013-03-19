@@ -44,18 +44,10 @@ typedef struct {
 	pcap_t		*pcap;
 	int		 pcapfd;
 	eth_t		*sendfd;
+	prober_t	*prober;
 	u_char		 last_packet[buffer_size];
 	size_t		 last_packet_len;
 } probing_t;
-
-static void sub_tv(struct timeval *out, struct timeval *in)
-{
-	if ((out->tv_usec -= in->tv_usec) < 0) {
-		--out->tv_sec;
-		out->tv_usec += 1000000;
-	}
-	out->tv_sec -= in->tv_sec;
-}
 
 static void probing_pcap_init(probing_t *probing, const char *iface,
 			      struct addr *ip) 
@@ -97,7 +89,8 @@ static void probing_pcap_init(probing_t *probing, const char *iface,
 	#endif
 }
 
-static probing_t *probing_init(const char *iface, struct addr *ip_dst)
+static probing_t *probing_init(const char *iface, struct addr *ip_dst,
+			       prober_t *prober)
 {
 	probing_t *probing;
 
@@ -111,6 +104,7 @@ static probing_t *probing_init(const char *iface, struct addr *ip_dst)
 
 	probing->iface	= iface;
 	probing->ip_dst	= ip_dst;
+	probing->prober = prober;
 
 	return probing;
 }
@@ -125,7 +119,7 @@ static void probing_free(probing_t * probing)
 
 static int probing_recv_packet(probing_t *probing, const u_char *packet,
 			       size_t packet_len, struct addr *from,
-			       probe_recv_cb_t recv_cb)
+			       struct timeval ts)
 {
 	struct ip_hdr	*ip;
 	struct ip_hdr	*icmp_ip;
@@ -136,12 +130,13 @@ static int probing_recv_packet(probing_t *probing, const u_char *packet,
 	ip	= (struct ip_hdr *) (packet + ETH_HDR_LEN);
 	addr_pack(from, ADDR_TYPE_IP, IP_ADDR_BITS, &ip->ip_src, IP_ADDR_LEN);
 
-	return recv_cb(probing->last_packet, probing->last_packet_len,
-		       packet + ETH_HDR_LEN, packet_len - ETH_HDR_LEN);
+	return probing->prober->recv(ts, probing->last_packet,
+				     probing->last_packet_len,
+				     packet + ETH_HDR_LEN,
+				     packet_len - ETH_HDR_LEN);
 }
 
-static int probing_recv(probing_t *probing, struct timeval *recv_tv,
-			struct addr *from, probe_recv_cb_t recv_cb)
+static int probing_recv(probing_t *probing, struct addr *from)
 {
 	int			 ret;
 	const u_char		*packet;
@@ -163,10 +158,8 @@ static int probing_recv(probing_t *probing, struct timeval *recv_tv,
 		packet = pcap_next(probing->pcap, &pcap_hdr);
 		if (packet == NULL)
 			continue;
-	
-		*recv_tv = pcap_hdr.ts;
 		return probing_recv_packet(probing, packet, pcap_hdr.len, from,
-					  recv_cb);
+					  pcap_hdr.ts);
 	}
 	return -1;
 }
@@ -202,52 +195,27 @@ static int probing_send(probing_t *probing, u_char *packet, size_t len)
 	return eth_send(probing->sendfd, buffer, len+ETH_HDR_LEN);	
 }
 
-static void probing_print_addr(struct addr *addr, int resolve) 
-{
-	char name[255], addr_str[INET6_ADDRSTRLEN];
-
-	addr_ntop(addr, addr_str, sizeof(addr_str));
-
-	if (resolve && resolve_addr(AF_INET, &addr->addr_ip,
-				    sizeof(addr->addr_ip), name) < 0)
-		addr_ntop(addr, name, sizeof(addr_str));
-
-	if (resolve)
-		printf("%s (%s)", name, addr_str);
-	else
-		printf("%s", addr_str);
-}
-
 void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
-		  int resolve, probe_send_cb_t send_cb, probe_recv_cb_t recv_cb)
+		  prober_t *prober)
 {
 	u_char		 ttl;
 	int		 p;
-	int		 ret;
+	int		 ret = 0;
 	probing_t	*probing;
-	struct timeval	 sent_tv; 
-	struct timeval	 recv_tv; 
 	struct addr	 from;
 	struct addr	 last_from;
 
-	probing = probing_init(iface, ip_dst);
+	probing = probing_init(iface, ip_dst, prober);
 	assert(probing != NULL);
 
 	for (ttl = 1; ttl <= max_ttl; ttl++) {
-		printf("%2d ", ttl);
-		fflush(stdout);
-
 		for (p = 0; p < probe_nprobes; p++) {
-
 			probing->last_packet_len = buffer_size;
-			if (send_cb(ttl, probing->last_packet,
-			       &probing->last_packet_len)) {
+			if (prober->send(ttl, probing->last_packet,
+					 &probing->last_packet_len)) {
 				error("no more packet to send");
 				goto done;
 			}
-
-			ret = gettimeofday(&sent_tv, NULL);
-			assert(ret != -1);
 
 			if (probing_send(probing, probing->last_packet,
 					 probing->last_packet_len) < 0) {
@@ -255,25 +223,12 @@ void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
 				goto done;
 			}
 
-			if (probing_recv(probing, &recv_tv, &from, recv_cb) < 0) {
-				printf(" *");
-			} else {
-				if (memcmp(&from, &last_from,
-					   sizeof(last_from)) != 0) {
-					memcpy(&last_from, &from,
-					       sizeof(last_from));
-					probing_print_addr(&from, resolve);
-				}
-
-				sub_tv(&recv_tv, &sent_tv);
-				printf(" %.3f ms", recv_tv.tv_sec * 1000.0 +
-						   recv_tv.tv_usec/1000.0);
-			}
+			if ((ret = probing_recv(probing, &from)) < 0)
+				prober->timeout();
 			fflush(stdout);
 		}
-		printf("\n");
-		if (addr_cmp(&last_from, ip_dst) == 0)
-			break;
+		if (ret > 0)
+			goto done;
 	}
 done:
 	probing_free(probing);

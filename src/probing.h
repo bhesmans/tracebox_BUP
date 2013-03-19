@@ -21,12 +21,17 @@
 #define __PROBING_H__
 
 #include <dnet.h>
+#include <sys/time.h>
 
-typedef int (*probe_send_cb_t)(u_char ttl, u_char *packet, size_t *len);
-typedef int (*probe_recv_cb_t)(const u_char *sent_packet, size_t sent_len,
-			       const u_char *recv_packet, size_t recv_len);
+typedef struct {
+	int (*send)(u_char ttl, u_char *packet, size_t *len);
+	int (*recv)(struct timeval ts, const u_char *sent_packet,
+			  size_t sent_len, const u_char *recv_packet,
+			  size_t recv_len);
+	void (*timeout)(void);
+} prober_t;
 
 void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
-		  int resolve, probe_send_cb_t send_cb, probe_recv_cb_t recv_cb);
+		  prober_t *prober);
 
 #endif

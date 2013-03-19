@@ -29,6 +29,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 
 #define error(format, args...)  \
 	fprintf(stderr, format "\n", ## args)
@@ -36,23 +37,64 @@
 static u_char hops_max = 30;
 static struct addr ip_src;
 static struct addr ip_dst;
+static struct addr last_from;
+static struct timeval sent_tv;
+static int last_ttl = -1;
+static int resolve = 1;
+
+static void sub_tv(struct timeval *out, struct timeval *in)
+{
+	if ((out->tv_usec -= in->tv_usec) < 0) {
+		--out->tv_sec;
+		out->tv_usec += 1000000;
+	}
+	out->tv_sec -= in->tv_sec;
+}
+
+static void print_addr(struct addr *addr)
+{
+	char name[255], addr_str[INET6_ADDRSTRLEN];
+
+	addr_ntop(addr, addr_str, sizeof(addr_str));
+
+	if (resolve && resolve_addr(AF_INET, &addr->addr_ip,
+				    sizeof(addr->addr_ip), name) < 0)
+		addr_ntop(addr, name, sizeof(addr_str));
+
+	if (resolve)
+		printf("%s (%s)", name, addr_str);
+	else
+		printf("%s ", addr_str);
+}
 
 static int send_probe_callback(u_char ttl, u_char *packet, size_t *len)
 {
 	u_short sport = (rand() & 0xffff) | 0x8000;
 	u_short dport = 80;
+	int ret;
+
+	if (ttl != last_ttl) {
+		printf("\n%2d ", ttl);
+		fflush(stdout);
+	}
+
+	ret = gettimeofday(&sent_tv, NULL);
+	assert(ret != -1);
 
 	*len = probe_pack(packet, IPPROTO_TCP, &ip_src, &ip_dst, ttl, sport,
 			  dport, NULL, 0);
+	last_ttl = ttl;
 	return 0;
 }
 
-static int recv_probe_callback(const u_char *sent_packet, size_t sent_len,
-			       const u_char *rcv_packet, size_t rcv_len)
+static int recv_probe_callback(struct timeval ts, const u_char *sent_packet,
+			       size_t sent_len, const u_char *rcv_packet,
+			       size_t rcv_len)
 {
 	struct ip_hdr	*ip;
 	struct ip_hdr	*icmp_ip;
 	struct ip_hdr	*last_ip;
+	struct addr	from;
 	size_t		 len;
 
 	ip  = (struct ip_hdr *)rcv_packet;
@@ -60,7 +102,7 @@ static int recv_probe_callback(const u_char *sent_packet, size_t sent_len,
 
 	if (ip->ip_p == IPPROTO_TCP) {
 		/* We received either a RST or a SYN/ACK */
-		return 0;
+		goto probe_recv;
 	} else if (ip->ip_p == IPPROTO_ICMP) {
 		struct icmp_hdr *icmp;
 
@@ -73,13 +115,38 @@ static int recv_probe_callback(const u_char *sent_packet, size_t sent_len,
 			last_ip = (struct ip_hdr *)sent_packet;
 
 			if (icmp_ip->ip_dst == last_ip->ip_dst)
-				return 0;
+				goto probe_recv;
 			else
 				return -1;
 		}
 	}
 	return -1;
+
+probe_recv:
+	addr_pack(&from, ADDR_TYPE_IP, IP_ADDR_BITS, &ip->ip_src, IP_ADDR_LEN);
+
+	if (memcmp(&from, &last_from, sizeof(last_from)) != 0) {
+		memcpy(&last_from, &from, sizeof(last_from));
+		print_addr(&from);
+	}
+
+	sub_tv(&ts, &sent_tv);
+	printf("%.3f ms ", ts.tv_sec * 1000.0 +
+			   ts.tv_usec / 1000.0);
+
+	return !!!memcmp(&last_from, &ip_dst, sizeof(ip_dst));
 }
+
+static void timeout_probe_callback(void)
+{
+	printf("* ");
+}
+
+static prober_t prober = {
+	.send = send_probe_callback,
+	.recv = recv_probe_callback,
+	.timeout = timeout_probe_callback,
+};
 
 int main(int argc, char *argv[])
 {
@@ -87,7 +154,6 @@ int main(int argc, char *argv[])
 	int		 iface_set = 0;
 	char		 addr_name[255];
 	struct addr	 tmp;
-	int		 resolve = 1;
 	size_t		 i, j;
 	char		 c;
 
@@ -138,11 +204,11 @@ int main(int argc, char *argv[])
 
 	char buf[INET_ADDRSTRLEN];
 	addr_ntop(&ip_dst, buf, sizeof(buf));
-	printf("traceroute to %s (%s): %d hops max\n", addr_name, buf, hops_max);
+	printf("traceroute to %s (%s): %d hops max", addr_name, buf, hops_max);
 
-	probing_loop(iface, &ip_dst, hops_max, resolve, send_probe_callback,
-		     recv_probe_callback);
+	probing_loop(iface, &ip_dst, hops_max, &prober);
 
+	printf("\n");
 	return EXIT_SUCCESS;
 	
 usage:
