@@ -1,0 +1,10 @@
+bin_PROGRAMS = tracebox
+
+tracebox_SOURCES = \
+	probing.h \
+	resolve.h \
+	probe.h \
+	main.c \
+	probing.c \
+	resolve.c
+tracebox_LDADD = -lpcap -ldnet
