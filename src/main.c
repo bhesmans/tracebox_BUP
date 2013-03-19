@@ -94,14 +94,22 @@ static int recv_probe_callback(struct timeval ts, const u_char *sent_packet,
 	struct ip_hdr	*ip;
 	struct ip_hdr	*icmp_ip;
 	struct ip_hdr	*last_ip;
-	struct addr	from;
+	struct tcp_hdr	*tcp;
+	struct tcp_hdr	*last_tcp;
+	struct addr	 from;
 	size_t		 len;
 
-	ip  = (struct ip_hdr *)rcv_packet;
-	len = ip->ip_hl << 2;
+	ip = (struct ip_hdr *)rcv_packet;
+	last_ip = (struct ip_hdr *)sent_packet;
+	last_tcp = (struct tcp_hdr *)(last_ip + (last_ip->ip_hl << 2));
 
+	len = ip->ip_hl << 2;
 	if (ip->ip_p == IPPROTO_TCP) {
 		/* We received either a RST or a SYN/ACK */
+		tcp = (struct tcp_hdr *)(ip + len);
+
+		if (last_tcp->th_sport != tcp->th_dport)
+			return -1;
 		goto probe_recv;
 	} else if (ip->ip_p == IPPROTO_ICMP) {
 		struct icmp_hdr *icmp;
@@ -112,9 +120,10 @@ static int recv_probe_callback(struct timeval ts, const u_char *sent_packet,
 		if (icmp->icmp_type == ICMP_UNREACH ||
 		    icmp->icmp_type == ICMP_TIMEXCEED) {
 			icmp_ip = (struct ip_hdr *)(rcv_packet + len);
-			last_ip = (struct ip_hdr *)sent_packet;
+			tcp = (struct tcp_hdr *)(icmp_ip + (icmp_ip->ip_hl << 2));
 
-			if (icmp_ip->ip_dst == last_ip->ip_dst)
+			if (icmp_ip->ip_dst == last_ip->ip_dst &&
+			    last_tcp->th_sport == tcp->th_sport)
 				goto probe_recv;
 			else
 				return -1;
@@ -143,8 +152,8 @@ static void timeout_probe_callback(void)
 }
 
 static prober_t prober = {
-	.send = send_probe_callback,
-	.recv = recv_probe_callback,
+	.send	 = send_probe_callback,
+	.recv	 = recv_probe_callback,
 	.timeout = timeout_probe_callback,
 };
 

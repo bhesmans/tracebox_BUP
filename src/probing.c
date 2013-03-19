@@ -34,7 +34,7 @@
 	fprintf(stderr, format "\n", ## args)
 #define probe_timeout	(3)
 #define probe_nprobes	(3)
-#define pcap_filter	("%s and (((tcp[13] == 4 or tcp[13] = 18)" \
+#define pcap_filter	("%s and (((tcp[13] & 4 == 4 or tcp[13] = 18)" \
 			 "and ip src %s) or icmp)")
 #define buffer_size	(1024)
 
