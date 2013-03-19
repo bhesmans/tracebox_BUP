@@ -215,8 +215,6 @@ usage:
 	fprintf(stderr, "Usage:\n"
 "  %s [ -6thnb ] [ -i device ] host\n"
 "Options:\n"
-"  -6                          Use IPv6\n"
-"  -t                          Use TCP\n"
 "  -h                          Display this help and exit\n"
 "  -n                          Do not resolve IP adresses\n"
 "  -i device                   Specify a network interface to operate with\n"
