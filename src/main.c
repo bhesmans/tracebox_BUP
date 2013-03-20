@@ -290,10 +290,11 @@ static void step_probe_callback(void)
 	if (chg & TCP_WIN)
 		printf("[TCP win changed] ");
 
-	if (chg & FULL_REPLY)
+	if (last_changes & FULL_REPLY)
 		printf("[Reply ICMP full pkt] ");
 
 	changes |= last_changes;
+	last_changes = 0;
 	printf("\n");
 }
 
