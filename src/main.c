@@ -259,7 +259,7 @@ static void step_probe_callback(void)
 {
 	u_int chg = last_changes & ~changes;
 
-	if (timeout) {
+	if (timeout == probe_nprobes) {
 		printf("*\n");
 		timeout = 0;
 		return;
@@ -293,7 +293,7 @@ static void step_probe_callback(void)
 
 static void timeout_probe_callback(void)
 {
-	timeout = 1;
+	timeout += 1;
 }
 
 static prober_t prober = {

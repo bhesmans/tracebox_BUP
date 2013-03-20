@@ -23,6 +23,8 @@
 #include <dnet.h>
 #include <sys/time.h>
 
+#define probe_nprobes	(3)
+
 typedef struct {
 	int (*send)(u_char ttl, u_char *packet, size_t *len);
 	int (*recv)(struct timeval ts, const u_char *sent_packet,
