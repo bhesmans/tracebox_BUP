@@ -9,7 +9,7 @@ Compiling
 
 Tracebox requires to have installed:
 
-* Development package of libpcap
+* Development package of libpcap and libdnet
 * automake, autoconf and libtool
 
 To build:
