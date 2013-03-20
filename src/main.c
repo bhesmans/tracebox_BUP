@@ -45,6 +45,7 @@ static int resolve = 1;
 static u_int changes = 0;
 static u_int last_changes = 0;
 static int timeout = 0;
+static int option_type = -1;
 
 static struct {
 	u_char option_type;
@@ -190,7 +191,10 @@ static int send_probe_callback(u_char ttl, u_char *packet, size_t *len)
 	ret = gettimeofday(&sent_tv, NULL);
 	assert(ret != -1);
 
-	tcp_opt_pack(TCP_OPT_MPTCP, opt, &opt_len);
+	if (option_type >= 0)
+		tcp_opt_pack(option_type, opt, &opt_len);
+	else
+		opt_len = 0;
 	*len = probe_pack(packet, IPPROTO_TCP, &ip_src, &ip_dst, ttl, sport,
 			  dport, opt, opt_len);
 	last_ttl = ttl;
@@ -332,14 +336,17 @@ int main(int argc, char *argv[])
 				resolve = 0;
 				break;
 			case 'o':
-				if (strncmp(optarg, "list", 4) == 0) {
+				if (!strcmp(optarg, "list")) {
 					int i;
 					for (i = 0; i < sizeof(tcp_options) / sizeof(tcp_options[0]); ++i)
 						printf("%s ", tcp_options[i].name);
 					printf("\n");
 					exit(EXIT_SUCCESS);
 				} else {
-					/* TODO */
+					int i;
+					for (i = 0; i < sizeof(tcp_options) / sizeof(tcp_options[0]); ++i)
+						if (!strcmp(tcp_options[i].name, optarg))
+							option_type = tcp_options[i].option_type;
 				}
 				break;
 			case 'h':
