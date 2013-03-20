@@ -183,9 +183,8 @@ static int probing_recv(probing_t *probing, struct addr *from)
 
 	for ( ; ; ) {
 		ret = select(probing->pcapfd+1, &read_fd, NULL, NULL, &ts);
-		assert(ret != -1);
 
-		if (ret == 0) 
+		if (ret <= 0)
 			return -1;
 
 		packet = pcap_next(probing->pcap, &pcap_hdr);
@@ -229,6 +228,13 @@ static int probing_send(probing_t *probing, u_char *packet, size_t len)
 	return eth_send(probing->sendfd, buffer, len+ETH_HDR_LEN);	
 }
 
+static int cont = 1;
+
+void probing_stop(void)
+{
+	cont = 0;
+}
+
 void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
 		  prober_t *prober, const char *dump_file)
 {
@@ -244,6 +250,9 @@ void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
 
 	for (ttl = 1; ttl <= max_ttl; ttl++) {
 		for (p = 0; p < probe_nprobes; p++) {
+			if (!cont)
+				goto done;
+
 			probing->last_packet_len = buffer_size;
 			if (prober->send(ttl, probing->last_packet,
 					 &probing->last_packet_len)) {

@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 
 #define error(format, args...)  \
 	fprintf(stderr, format "\n", ## args)
@@ -306,6 +307,11 @@ static void timeout_probe_callback(void)
 	timeout += 1;
 }
 
+static void handle_term(int sig)
+{
+	probing_stop();
+}
+
 static prober_t prober = {
 	.send	 = send_probe_callback,
 	.recv	 = recv_probe_callback,
@@ -387,6 +393,10 @@ int main(int argc, char *argv[])
 		error("unable to retrieve ip address of interface %s", iface);
 		exit(EXIT_FAILURE);
 	}
+
+	signal(SIGTERM, handle_term);
+	signal(SIGKILL, handle_term);
+	signal(SIGINT, handle_term);
 
 	char buf[INET_ADDRSTRLEN];
 	addr_ntop(&ip_dst, buf, sizeof(buf));
