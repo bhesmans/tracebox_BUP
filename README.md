@@ -20,7 +20,7 @@ To build:
 
 Usage
 -----
-	  ./tracebox [ -6thnb ] [ -i device ] [ -m hops_max ] [ -o option ] host
+	  ./tracebox [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] host
 	Options:
 	  -h                          Display this help and exit
 	  -n                          Do not resolve IP adresses
@@ -30,3 +30,15 @@ Usage
 	  -o option                   Define the TCP option to put in the SYN segment.
 	                              Default is none. -o list for a list of available
 	                              options.
+
+Output example:
+
+	$ sudo ./tracebox -n -m 8 -o ts -i en0 87.98.252.243
+	tracebox to 87.98.252.243 (): 8 hops max
+	 1 130.104.228.126 [DSCP changed] [TCP seq changed] 
+	 2 130.104.254.229 
+	 3 193.191.3.85 
+	 4 194.53.172.70 
+	 5 213.251.130.61 [Reply ICMP full pkt] 
+	 6 94.23.122.160 
+	 7 87.98.252.243 

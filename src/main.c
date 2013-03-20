@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
 	
 usage:
 	fprintf(stderr, "Usage:\n"
-"  %s [ -6thnb ] [ -i device ] [ -m hops_max ] [ -o option ] host\n"
+"  %s [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] host\n"
 "Options:\n"
 "  -h                          Display this help and exit\n"
 "  -n                          Do not resolve IP adresses\n"
