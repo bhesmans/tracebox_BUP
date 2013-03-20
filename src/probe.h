@@ -43,8 +43,18 @@ static inline size_t probe_ip_udp_pack(u_char *ptr, struct addr *ip_src,
 	return (IP_HDR_LEN + UDP_HDR_LEN + dlen);
 }
 
-static u_int seq = 0;
-static u_short id = 0;
+static u_short __id;
+static u_int __seq;
+static u_int __ack;
+static u_char __tcp_flags;
+
+static inline void probe_tcp_setup(u_int seq, u_int ack, u_char flags)
+{
+	__seq = seq;
+	__ack = ack;
+	__tcp_flags = flags;
+}
+
 static inline size_t probe_ip_tcp_pack(u_char *ptr, struct addr *ip_src,
 				       struct addr *ip_dst, u_char ttl,
 				       u_short sport, u_short dport,
@@ -53,16 +63,20 @@ static inline size_t probe_ip_tcp_pack(u_char *ptr, struct addr *ip_src,
 	struct ip_hdr  *ip  = (struct ip_hdr *) ptr;
 	struct tcp_hdr *tcp = (struct tcp_hdr *)(ptr + IP_HDR_LEN);
 	u_char *option = (u_char *)(ptr + IP_HDR_LEN + TCP_HDR_LEN);
-	if (!seq) seq = rand();
-	if (!id) id = rand();
-	ip_pack_hdr(ip, 0x0, IP_HDR_LEN + TCP_HDR_LEN + olen, id, 0x0, ttl,
+	ip_pack_hdr(ip, 0x0, IP_HDR_LEN + TCP_HDR_LEN + olen, __id, 0x0, ttl,
 		    IPPROTO_TCP, ip_src->addr_ip, ip_dst->addr_ip);
-	tcp_pack_hdr(tcp, sport, dport, seq, 0x0, TH_SYN, 65535, 0x0);
+	tcp_pack_hdr(tcp, sport, dport, __seq, __ack, __tcp_flags, 65535, 0x0);
 	tcp->th_off += olen / 4;
 	memcpy(option, opt, olen);
 	ip_checksum(ip, IP_HDR_LEN + TCP_HDR_LEN + olen);
 	return (IP_HDR_LEN + TCP_HDR_LEN + olen);
 }
+
+static inline void probe_ip_setup(u_short id)
+{
+	__id = id;
+}
+
 
 static inline size_t probe_ip_pack(u_char *ptr, u_char proto,
 				   struct addr *ip_src, struct addr *ip_dst,

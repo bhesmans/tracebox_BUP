@@ -47,6 +47,7 @@ static u_int last_changes = 0;
 static int timeout = 0;
 static int option_type = -1;
 static u_short dport = 80;
+static u_char flags = TH_SYN;
 
 static struct {
 	u_char option_type;
@@ -57,6 +58,20 @@ static struct {
 	{ TCP_OPT_WSCALE,	"wscale" },
 	{ TCP_OPT_TIMESTAMP,	"ts" },
 	{ TCP_OPT_SACKOK,	"sack" },
+};
+
+static struct {
+	u_char flag;
+	char name[8];
+} tcp_flags[] = {
+	{ TH_FIN,	"fin" },
+	{ TH_SYN,	"syn" },
+	{ TH_RST,	"rst" },
+	{ TH_PUSH,	"push" },
+	{ TH_ACK,	"ack" },
+	{ TH_URG,	"urg" },
+	{ TH_ECE,	"ece" },
+	{ TH_CWR,	"cwr" },
 };
 
 static void sub_tv(struct timeval *out, struct timeval *in)
@@ -307,6 +322,20 @@ static void timeout_probe_callback(void)
 	timeout += 1;
 }
 
+static u_char parse_flags(char *args)
+{
+	char *flag;
+	u_char flags = 0;
+
+	for (flag = strtok(args, ","); flag; flag = strtok(NULL, ",")) {
+		int i;
+		for (i = 0; i < sizeof(tcp_flags) / sizeof(tcp_flags[0]); ++i)
+			if (!strcmp(tcp_flags[i].name, flag))
+				flags |= tcp_flags[i].flag;
+	}
+	return flags;
+}
+
 static void handle_term(int sig)
 {
 	probing_stop();
@@ -336,7 +365,7 @@ int main(int argc, char *argv[])
 
 	srand(time(NULL) ^ getpid());
 
-	while ((c = getopt (argc, argv, ":i:m:o:O:p:hn")) != -1) {
+	while ((c = getopt (argc, argv, ":i:m:o:O:p:f:hn")) != -1) {
 		switch (c) {
 			case 'i':
 				strncpy(iface, optarg, INTF_NAME_LEN);
@@ -350,6 +379,9 @@ int main(int argc, char *argv[])
 				break;
 			case 'p':
 				dport = strtol(optarg, NULL, 10);
+				break;
+			case 'f':
+				flags = parse_flags(optarg);
 				break;
 			case 'o':
 				if (!strcmp(optarg, "list")) {
@@ -405,6 +437,10 @@ int main(int argc, char *argv[])
 	addr_ntop(&ip_dst, buf, sizeof(buf));
 	printf("tracebox to %s (%s): %d hops max\n", addr_name, buf, hops_max);
 
+	/* Configure probe fields */
+	probe_ip_setup(rand());
+	probe_tcp_setup(rand(), flags & TH_ACK ? rand() : 0, flags);
+
 	probing_loop(iface, &ip_dst, hops_max, &prober, output_file);
 
 	return EXIT_SUCCESS;
@@ -412,7 +448,7 @@ int main(int argc, char *argv[])
 usage:
 	fprintf(stderr, "Usage:\n"
 "  %s [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] [ -O file ] [ -p port ]"
-" host\n"
+" [ -f flags ] host\n"
 "Options:\n"
 "  -h                          Display this help and exit\n"
 "  -n                          Do not resolve IP adresses\n"
@@ -424,7 +460,10 @@ usage:
 "                              options.\n"
 "  -O file                     Use file to dump the sent and received packets\n"
 "  -p port                     Specify the destination port to use when\n"
-"                              generating probes. Default is 80."
+"                              generating probes. Default is 80.\n"
+"  -f flag1[,flag2[,flag3...]] Specify the TCP flags to use. Values are: syn,\n"
+"                              ack, fin, rst, push, urg, ece, cwr. Default is:\n"
+"                              syn.\n"
 "\n", argv[0]);
-	exit(EXIT_FAILURE);	
+	exit(EXIT_FAILURE);
 }

@@ -20,7 +20,7 @@ To build:
 
 Usage
 -----
-	  ./tracebox [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] [ -O file ] [ -p port ] host
+	  ./tracebox [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] [ -O file ] [ -p port ] [ -f flags ] host
 	Options:
 	  -h                          Display this help and exit
 	  -n                          Do not resolve IP adresses
@@ -33,6 +33,9 @@ Usage
 	  -O file                     Use file to dump the sent and received packets
 	  -p port                     Specify the destination port to use when
 	                              generating probes. Default is 80.
+	  -f flag1[,flag2[,flag3...]] Specify the TCP flags to use. Values are: syn,
+	                              ack, fin, rst, push, urg, ece, cwr. Default is:
+	                              syn.
 
 Output example:
 
