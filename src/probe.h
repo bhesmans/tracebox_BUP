@@ -22,7 +22,7 @@
 
 #include <dnet.h>
 #include <string.h>
-	
+
 static inline size_t probe_ip_udp_pack(u_char *ptr, struct addr *ip_src,
 				       struct addr *ip_dst, u_char ttl,
 				       u_short sport, u_short dport,
@@ -50,9 +50,11 @@ static inline size_t probe_ip_tcp_pack(u_char *ptr, struct addr *ip_src,
 	struct tcp_hdr *tcp = (struct tcp_hdr *)(ptr + IP_HDR_LEN);
 	u_char *option = (u_char *)(ptr + IP_HDR_LEN + TCP_HDR_LEN);
 	u_int seq = rand();
-	ip_pack_hdr(ip, 0x0, IP_HDR_LEN + TCP_HDR_LEN + olen, 0x0, 0x0, ttl,
+	u_char tos = rand();
+	u_short id = rand();
+	ip_pack_hdr(ip, tos, IP_HDR_LEN + TCP_HDR_LEN + olen, id, 0x0, ttl,
 		    IPPROTO_TCP, ip_src->addr_ip, ip_dst->addr_ip);
-	tcp_pack_hdr(tcp, sport, dport, seq, 0, TH_SYN, 65535, 0x0);
+	tcp_pack_hdr(tcp, sport, dport, seq, 0x0, TH_SYN, 65535, 0x0);
 	tcp->th_off += olen / 4;
 	memcpy(option, opt, olen);
 	ip_checksum(ip, IP_HDR_LEN + TCP_HDR_LEN + olen);

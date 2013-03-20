@@ -227,6 +227,7 @@ void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
 				prober->timeout();
 			fflush(stdout);
 		}
+		prober->step();
 		if (ret > 0)
 			goto done;
 	}

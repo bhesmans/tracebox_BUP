@@ -26,8 +26,9 @@
 typedef struct {
 	int (*send)(u_char ttl, u_char *packet, size_t *len);
 	int (*recv)(struct timeval ts, const u_char *sent_packet,
-			  size_t sent_len, const u_char *recv_packet,
-			  size_t recv_len);
+		    size_t sent_len, const u_char *recv_packet,
+		    size_t recv_len);
+	void (*step)(void);
 	void (*timeout)(void);
 } prober_t;
 
