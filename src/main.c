@@ -46,6 +46,7 @@ static u_int changes = 0;
 static u_int last_changes = 0;
 static int timeout = 0;
 static int option_type = -1;
+static u_short dport = 80;
 
 static struct {
 	u_char option_type;
@@ -180,7 +181,6 @@ out:
 static int send_probe_callback(u_char ttl, u_char *packet, size_t *len)
 {
 	u_short sport = (getpid() & 0xffff) | 0x8000;
-	u_short dport = 80;
 	u_char opt[TCP_OPT_LEN_MAX];
 	size_t opt_len = TCP_OPT_LEN_MAX;
 	int ret;
@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
 
 	srand(time(NULL) ^ getpid());
 
-	while ((c = getopt (argc, argv, ":i:m:o:O:hn")) != -1) {
+	while ((c = getopt (argc, argv, ":i:m:o:O:p:hn")) != -1) {
 		switch (c) {
 			case 'i':
 				strncpy(iface, optarg, INTF_NAME_LEN);
@@ -347,6 +347,9 @@ int main(int argc, char *argv[])
 				break;
 			case 'n':
 				resolve = 0;
+				break;
+			case 'p':
+				dport = strtol(optarg, NULL, 10);
 				break;
 			case 'o':
 				if (!strcmp(optarg, "list")) {
