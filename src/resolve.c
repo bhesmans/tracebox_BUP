@@ -17,7 +17,6 @@
  *  MA  02110-1301, USA.
  */
 
-#include <dnet.h>
 #ifdef HAVE_NET_BPF_H
 #include <net/bpf.h>
 #endif
@@ -28,6 +27,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
+#include "compat.h"
 
 #define arp_timeout (3)
 #define arp_nprobes (3)

@@ -7,4 +7,8 @@ tracebox_SOURCES = \
 	main.c \
 	probing.c \
 	resolve.c
+if LINUX
+tracebox_LDADD = -lpcap -ldumbnet
+else
 tracebox_LDADD = -lpcap -ldnet
+endif

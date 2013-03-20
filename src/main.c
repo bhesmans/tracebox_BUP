@@ -22,7 +22,6 @@
 #include "resolve.h"
 #include "options.h"
 
-#include <dnet.h>
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>

@@ -20,7 +20,6 @@
 #include "probing.h"
 #include "resolve.h"
 
-#include <dnet.h>
 #ifdef HAVE_NET_BPF_H
 #include <net/bpf.h>
 #endif

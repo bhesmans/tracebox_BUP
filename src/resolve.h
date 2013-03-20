@@ -20,7 +20,7 @@
 #ifndef __RESOLVE_H__
 #define __RESOLVE_H__
 
-#include <dnet.h>
+#include "compat.h"
 
 int resolve_iface (const char *iface, struct addr *ether, struct addr *ip);
 int resolve_ip(const char *iface, struct addr *ip, struct addr *ether);

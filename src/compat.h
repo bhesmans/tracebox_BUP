@@ -17,24 +17,13 @@
  *  MA  02110-1301, USA.
  */
 
-#ifndef __PROBING_H__
-#define __PROBING_H__
+#ifndef __COMPAT_H__
+#define __COMPAT_H__
 
-#include <sys/time.h>
-#include "compat.h"
-
-#define probe_nprobes	(3)
-
-typedef struct {
-	int (*send)(u_char ttl, u_char *packet, size_t *len);
-	int (*recv)(struct timeval ts, const u_char *sent_packet,
-		    size_t sent_len, const u_char *recv_packet,
-		    size_t recv_len);
-	void (*step)(void);
-	void (*timeout)(void);
-} prober_t;
-
-void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
-		  prober_t *prober, const char *dump_file);
+#ifdef __linux
+#include <dumbnet.h>
+#else
+#include <dnet.h>
+#endif
 
 #endif

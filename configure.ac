@@ -17,7 +17,14 @@ AC_CHECK_HEADER([net/ethernet.h])
 AC_CHECK_HEADER([netinet/ip.h])
 AC_CHECK_HEADER([net/bpf.h], [AC_DEFINE(HAVE_NET_BPF_H)], [])
 AC_CHECK_HEADER([pcap.h], [], [AC_MSG_ERROR([need libcap])])
-AC_CHECK_HEADER([dnet.h], [], [AC_MSG_ERROR([need libdnet])])
+case $OSTYPE in
+linux-gnu)
+	AC_CHECK_HEADER([dumbnet.h], [], [AC_MSG_ERROR([need libdumbnet-dev])]);;
+*)
+	AC_CHECK_HEADER([dnet.h], [], [AC_MSG_ERROR([need libdnet])]);;
+esac
+
+AM_CONDITIONAL(LINUX, test "$OSTYPE" = "linux-gnu")
 
 AC_CONFIG_FILES([
 	Makefile

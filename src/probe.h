@@ -20,8 +20,10 @@
 #ifndef __PROBE_H__
 #define __PROBE_H__
 
-#include <dnet.h>
+#include <sys/types.h>
 #include <string.h>
+
+#include "compat.h"
 
 static inline size_t probe_ip_udp_pack(u_char *ptr, struct addr *ip_src,
 				       struct addr *ip_dst, u_char ttl,
