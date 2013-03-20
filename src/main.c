@@ -154,7 +154,7 @@ static int compare_reply(const u_char *orig, size_t orig_len,
 
 	/* Has the destination replied with the option ? */
 	tot_len = ntohs(ip->ip_len);
-	opt_off = (ip->ip_hl << 2) - sizeof(*tcp);
+	opt_off = (ip->ip_hl << 2) + sizeof(*tcp);
 	if (opt_off > 0) {
 		struct tcp_opt *opt, *orig_opt;
 		int find = 0;
@@ -282,7 +282,7 @@ static void step_probe_callback(void)
 	if (chg & TCP_SEQ)
 		printf("[TCP seq changed] ");
 	if ((chg & IP_TLEN) || ((chg & TCP_OPT) && !(chg & TCP_REPLY)))
-		printf("[TCP opt removed] ");
+		printf("[TCP opt removed/changed] ");
 	if ((chg & TCP_OPT) && (chg & TCP_REPLY))
 		printf("[Did not reply with opt] ");
 	if (chg & TCP_WIN)
