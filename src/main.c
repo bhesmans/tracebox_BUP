@@ -411,7 +411,8 @@ int main(int argc, char *argv[])
 	
 usage:
 	fprintf(stderr, "Usage:\n"
-"  %s [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] [ -O file ] host\n"
+"  %s [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] [ -O file ] [ -p port ]"
+" host\n"
 "Options:\n"
 "  -h                          Display this help and exit\n"
 "  -n                          Do not resolve IP adresses\n"
@@ -422,6 +423,8 @@ usage:
 "                              Default is none. -o list for a list of available\n"
 "                              options.\n"
 "  -O file                     Use file to dump the sent and received packets\n"
+"  -p port                     Specify the destination port to use when\n"
+"                              generating probes. Default is 80."
 "\n", argv[0]);
 	exit(EXIT_FAILURE);	
 }
