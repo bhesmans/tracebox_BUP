@@ -86,15 +86,16 @@ static void print_addr(struct addr *addr)
 enum header_change_t {
 	IP_HLEN		= 1,
 	IP_DSCP		= 1 << 1,
-	IP_TLEN		= 1 << 2,
-	IP_ID		= 1 << 3,
-	IP_FRAG		= 1 << 4,
-	IP_SADDR	= 1 << 5,
-	TCP_SPORT	= 1 << 6,
-	TCP_SEQ		= 1 << 7,
-	TCP_DOFF	= 1 << 8,
-	TCP_WIN		= 1 << 9,
-	TCP_OPT		= 1 << 10,
+	IP_TLEN_INCR	= 1 << 2,
+	IP_TLEN_DECR	= 1 << 3,
+	IP_ID		= 1 << 4,
+	IP_FRAG		= 1 << 5,
+	IP_SADDR	= 1 << 6,
+	TCP_SPORT	= 1 << 7,
+	TCP_SEQ		= 1 << 8,
+	TCP_DOFF	= 1 << 9,
+	TCP_WIN		= 1 << 10,
+	TCP_OPT		= 1 << 11,
 
 	FULL_REPLY	= 1 << 30,
 	TCP_REPLY	= 1 << 31,
@@ -111,7 +112,8 @@ static int compare_packet(const u_char *orig, size_t orig_len,
 
 	ret |= (orig_ip->ip_hl != ip->ip_hl ? IP_HLEN : 0);
 	ret |= (orig_ip->ip_tos != ip->ip_tos ? IP_DSCP : 0);
-	ret |= (orig_ip->ip_len != ip->ip_len ? IP_TLEN : 0);
+	ret |= (orig_ip->ip_len < ip->ip_len ? IP_TLEN_INCR : 0);
+	ret |= (orig_ip->ip_len > ip->ip_len ? IP_TLEN_DECR : 0);
 	ret |= (orig_ip->ip_id != ip->ip_id ? IP_ID : 0);
 	ret |= (orig_ip->ip_off != ip->ip_off ? IP_FRAG : 0);
 	ret |= (orig_ip->ip_src != ip->ip_src ? IP_SADDR : 0);
@@ -277,13 +279,15 @@ static void step_probe_callback(void)
 		printf("[DSCP changed] ");
 	if (chg & IP_ID)
 		printf("[IP ID] ");
+	if (chg & IP_TLEN_INCR)
+		printf("[TCP/IP option added] ");
 	if (chg & IP_FRAG)
 		printf("[Fragmented] ");
 	if ((chg & TCP_SPORT) || (chg & IP_SADDR))
 		printf("[NAT] ");
 	if (chg & TCP_SEQ)
 		printf("[TCP seq changed] ");
-	if ((chg & IP_TLEN) || ((chg & TCP_OPT) && !(chg & TCP_REPLY)))
+	if ((chg & IP_TLEN_DECR) || ((chg & TCP_OPT) && !(chg & TCP_REPLY)))
 		printf("[TCP opt removed/changed] ");
 	if ((chg & TCP_OPT) && (chg & TCP_REPLY))
 		printf("[Did not reply with opt] ");
