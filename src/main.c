@@ -95,6 +95,7 @@ enum header_change_t {
 	TCP_WIN		= 1 << 9,
 	TCP_OPT		= 1 << 10,
 
+	FULL_REPLY	= 1 << 30,
 	TCP_REPLY	= 1 << 31,
 };
 
@@ -122,6 +123,8 @@ static int compare_packet(const u_char *orig, size_t orig_len,
 
 	ret |= (orig_tcp->th_off != tcp->th_off ? TCP_DOFF : 0);
 	ret |= (orig_tcp->th_win != tcp->th_win ? TCP_WIN : 0);
+
+	ret |= (orig_ip->ip_len == ip->ip_len ? FULL_REPLY : 0);
 
 	/* Check if NOP */
 	if (orig_ip->ip_len == ip->ip_len)
@@ -281,6 +284,8 @@ static void step_probe_callback(void)
 	if (chg & TCP_WIN)
 		printf("[TCP win changed] ");
 
+	if (chg & FULL_REPLY)
+		printf("[Reply ICMP full pkt] ");
 
 	changes |= last_changes;
 	printf("\n");
