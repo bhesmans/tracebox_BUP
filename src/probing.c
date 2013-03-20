@@ -41,6 +41,8 @@ typedef struct {
 	struct addr	*ip_dst;
 	const char	*iface;
 	pcap_t		*pcap;
+	pcap_t		*pcap_dump;
+	pcap_dumper_t	*pcap_dumper;
 	int		 pcapfd;
 	eth_t		*sendfd;
 	prober_t	*prober;
@@ -49,7 +51,7 @@ typedef struct {
 } probing_t;
 
 static void probing_pcap_init(probing_t *probing, const char *iface,
-			      struct addr *ip) 
+			      struct addr *ip, const char *dump_file)
 {
 	char			pcap_errbuf[PCAP_ERRBUF_SIZE];
 	char			filter_exp[255];
@@ -86,10 +88,17 @@ static void probing_pcap_init(probing_t *probing, const char *iface,
 		assert(ret >= 0);
 	}
 	#endif
+
+	if (dump_file) {
+		probing->pcap_dump = pcap_open_dead(DLT_RAW, 65535);
+		probing->pcap_dumper = pcap_dump_open(probing->pcap_dump,
+						      dump_file);
+	} else
+		probing->pcap_dumper = NULL;
 }
 
 static probing_t *probing_init(const char *iface, struct addr *ip_dst,
-			       prober_t *prober)
+			       prober_t *prober, const char *dump_file)
 {
 	probing_t *probing;
 
@@ -99,7 +108,7 @@ static probing_t *probing_init(const char *iface, struct addr *ip_dst,
 	probing->sendfd = eth_open(iface);
 	assert(probing->sendfd != NULL);
 
-	probing_pcap_init(probing, iface,  ip_dst);
+	probing_pcap_init(probing, iface,  ip_dst, dump_file);
 
 	probing->iface	= iface;
 	probing->ip_dst	= ip_dst;
@@ -113,7 +122,31 @@ static void probing_free(probing_t * probing)
 	close(probing->pcapfd);
 	pcap_close(probing->pcap);
 	eth_close(probing->sendfd);
+
+	if (probing->pcap_dumper) {
+		pcap_close(probing->pcap_dump);
+		pcap_dump_close(probing->pcap_dumper);
+	}
+
 	free(probing);
+}
+
+static void probing_dump(probing_t *probing, const u_char *packet,
+			 size_t packet_len)
+{
+	int ret;
+	struct pcap_pkthdr ph = {
+		.caplen = packet_len,
+		.len = packet_len,
+	};
+
+	if (!probing->pcap_dumper)
+		return;
+
+	ret = gettimeofday(&ph.ts, NULL);
+	assert(ret != -1);
+
+	pcap_dump((u_char *)probing->pcap_dumper, &ph, packet);
 }
 
 static int probing_recv_packet(probing_t *probing, const u_char *packet,
@@ -128,6 +161,8 @@ static int probing_recv_packet(probing_t *probing, const u_char *packet,
 	len	= ETH_HDR_LEN;
 	ip	= (struct ip_hdr *) (packet + ETH_HDR_LEN);
 	addr_pack(from, ADDR_TYPE_IP, IP_ADDR_BITS, &ip->ip_src, IP_ADDR_LEN);
+
+	probing_dump(probing, packet + ETH_HDR_LEN, packet_len - ETH_HDR_LEN);
 
 	return probing->prober->recv(ts, probing->last_packet,
 				     probing->last_packet_len,
@@ -157,6 +192,7 @@ static int probing_recv(probing_t *probing, struct addr *from)
 		packet = pcap_next(probing->pcap, &pcap_hdr);
 		if (packet == NULL)
 			continue;
+
 		return probing_recv_packet(probing, packet, pcap_hdr.len, from,
 					  pcap_hdr.ts);
 	}
@@ -195,7 +231,7 @@ static int probing_send(probing_t *probing, u_char *packet, size_t len)
 }
 
 void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
-		  prober_t *prober)
+		  prober_t *prober, const char *dump_file)
 {
 	u_char		 ttl;
 	int		 p;
@@ -204,7 +240,7 @@ void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
 	struct addr	 from;
 	struct addr	 last_from;
 
-	probing = probing_init(iface, ip_dst, prober);
+	probing = probing_init(iface, ip_dst, prober, dump_file);
 	assert(probing != NULL);
 
 	for (ttl = 1; ttl <= max_ttl; ttl++) {
@@ -215,6 +251,9 @@ void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
 				error("no more packet to send");
 				goto done;
 			}
+
+			probing_dump(probing, probing->last_packet,
+				     probing->last_packet_len);
 
 			if (probing_send(probing, probing->last_packet,
 					 probing->last_packet_len) < 0) {

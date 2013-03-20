@@ -20,7 +20,7 @@ To build:
 
 Usage
 -----
-	  ./tracebox [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] host
+	  ./tracebox [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] [ -O file ] host
 	Options:
 	  -h                          Display this help and exit
 	  -n                          Do not resolve IP adresses
@@ -30,6 +30,7 @@ Usage
 	  -o option                   Define the TCP option to put in the SYN segment.
 	                              Default is none. -o list for a list of available
 	                              options.
+	  -O file                     Use file to dump the sent and received packets
 
 Output example:
 

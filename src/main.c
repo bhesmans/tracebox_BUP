@@ -318,6 +318,7 @@ int main(int argc, char *argv[])
 	struct addr	 tmp;
 	size_t		 i, j;
 	char		 c;
+	char		*output_file = NULL;
 
 	if (geteuid() != 0) {
 		error("tracebox can only be used as root");
@@ -326,7 +327,7 @@ int main(int argc, char *argv[])
 
 	srand(time(NULL) ^ getpid());
 
-	while ((c = getopt (argc, argv, ":i:m:o:hn")) != -1) {
+	while ((c = getopt (argc, argv, ":i:m:o:O:hn")) != -1) {
 		switch (c) {
 			case 'i':
 				strncpy(iface, optarg, INTF_NAME_LEN);
@@ -351,6 +352,9 @@ int main(int argc, char *argv[])
 						if (!strcmp(tcp_options[i].name, optarg))
 							option_type = tcp_options[i].option_type;
 				}
+				break;
+			case 'O':
+				output_file = optarg;
 				break;
 			case 'h':
 				goto usage;
@@ -385,13 +389,13 @@ int main(int argc, char *argv[])
 	addr_ntop(&ip_dst, buf, sizeof(buf));
 	printf("tracebox to %s (%s): %d hops max\n", addr_name, buf, hops_max);
 
-	probing_loop(iface, &ip_dst, hops_max, &prober);
+	probing_loop(iface, &ip_dst, hops_max, &prober, output_file);
 
 	return EXIT_SUCCESS;
 	
 usage:
 	fprintf(stderr, "Usage:\n"
-"  %s [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] host\n"
+"  %s [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] [ -O file ] host\n"
 "Options:\n"
 "  -h                          Display this help and exit\n"
 "  -n                          Do not resolve IP adresses\n"
@@ -401,6 +405,7 @@ usage:
 "  -o option                   Define the TCP option to put in the SYN segment.\n"
 "                              Default is none. -o list for a list of available\n"
 "                              options.\n"
+"  -O file                     Use file to dump the sent and received packets\n"
 "\n", argv[0]);
 	exit(EXIT_FAILURE);	
 }

@@ -35,6 +35,6 @@ typedef struct {
 } prober_t;
 
 void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
-		  prober_t *prober);
+		  prober_t *prober, const char *dump_file);
 
 #endif
