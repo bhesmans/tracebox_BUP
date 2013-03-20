@@ -206,14 +206,14 @@ static int recv_probe_callback(struct timeval ts, const u_char *sent_packet,
 			       size_t rcv_len)
 {
 	struct ip_hdr	*ip;
+	struct ip_hdr	*base_ip;
 	struct ip_hdr	*last_ip;
 	struct tcp_hdr	*tcp;
 	struct tcp_hdr	*last_tcp;
 	size_t		 len;
 	u_int		 chg = 0;
 
-	ip = (struct ip_hdr *)rcv_packet;
-	addr_pack(&last_from, ADDR_TYPE_IP, IP_ADDR_BITS, &ip->ip_src, IP_ADDR_LEN);
+	base_ip = ip = (struct ip_hdr *)rcv_packet;
 
 	last_ip = (struct ip_hdr *)sent_packet;
 	last_tcp = (struct tcp_hdr *)(sent_packet + (last_ip->ip_hl << 2));
@@ -255,6 +255,8 @@ static int recv_probe_callback(struct timeval ts, const u_char *sent_packet,
 	return -1;
 
 probe_recv:
+	addr_pack(&last_from, ADDR_TYPE_IP, IP_ADDR_BITS, &base_ip->ip_src,
+		  IP_ADDR_LEN);
 	last_changes |= chg;
 	return !!!memcmp(&last_from, &ip_dst, sizeof(ip_dst));
 }
