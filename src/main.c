@@ -351,6 +351,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if (optind == argc)
+		goto usage;
+
 	if (resolve_host(AF_INET, argv[argc-1], &ip_dst, addr_name, sizeof(addr_name)) < 0) {
 		error("error resolving %s", argv[argc-1]);
 		exit(EXIT_FAILURE);
