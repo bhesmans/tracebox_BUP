@@ -396,7 +396,8 @@ usage:
 "  -m hops_max                 Set the max number of hops (max TTL to be\n"
 "                              reached). Default is 30\n"
 "  -o option                   Define the TCP option to put in the SYN segment.\n"
-"                              Default is none."
+"                              Default is none. -o list for a list of available\n"
+"                              options.\n"
 "\n", argv[0]);
 	exit(EXIT_FAILURE);	
 }
