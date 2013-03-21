@@ -56,9 +56,11 @@ static inline size_t mptcp_pack(struct tcp_opt *opt)
 	return sizeof(*mpc) + 2;
 }
 
+static u_short __mss = 9140;
+
 static inline size_t mss_pack(struct tcp_opt *opt)
 {
-	opt->opt_data.mss = htons(1460);
+	opt->opt_data.mss = htons(__mss);
 	return 4;
 }
 

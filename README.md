@@ -20,8 +20,8 @@ To build:
 
 Usage
 -----
-	  ./tracebox [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] [ -O file ] [ -p port ] [ -f flags ] host
-	Options:
+	  ./tracebox [ -hn ] [ OPTIONS ] host
+	Options are:
 	  -h                          Display this help and exit
 	  -n                          Do not resolve IP adresses
 	  -i device                   Specify a network interface to operate with
@@ -36,6 +36,8 @@ Usage
 	  -f flag1[,flag2[,flag3...]] Specify the TCP flags to use. Values are: syn,
 	                              ack, fin, rst, push, urg, ece, cwr. Default is:
 	                              syn.
+	  -M mss                      Specify the MSS to use when generating the TCP
+	                              MSS option. Default is 9140.
 
 Output example:
 

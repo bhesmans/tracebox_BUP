@@ -365,7 +365,7 @@ int main(int argc, char *argv[])
 
 	srand(time(NULL) ^ getpid());
 
-	while ((c = getopt (argc, argv, ":i:m:o:O:p:f:hn")) != -1) {
+	while ((c = getopt (argc, argv, ":i:m:o:O:p:f:M:hn")) != -1) {
 		switch (c) {
 			case 'i':
 				strncpy(iface, optarg, INTF_NAME_LEN);
@@ -382,6 +382,9 @@ int main(int argc, char *argv[])
 				break;
 			case 'f':
 				flags = parse_flags(optarg);
+				break;
+			case 'M':
+				__mss = strtol(optarg, NULL, 10);
 				break;
 			case 'o':
 				if (!strcmp(optarg, "list")) {
@@ -447,9 +450,8 @@ int main(int argc, char *argv[])
 	
 usage:
 	fprintf(stderr, "Usage:\n"
-"  %s [ -hn ] [ -i device ] [ -m hops_max ] [ -o option ] [ -O file ] [ -p port ]"
-" [ -f flags ] host\n"
-"Options:\n"
+"  %s [ -hn ] [ OPTIONS ] host\n"
+"Options are:\n"
 "  -h                          Display this help and exit\n"
 "  -n                          Do not resolve IP adresses\n"
 "  -i device                   Specify a network interface to operate with\n"
@@ -464,6 +466,8 @@ usage:
 "  -f flag1[,flag2[,flag3...]] Specify the TCP flags to use. Values are: syn,\n"
 "                              ack, fin, rst, push, urg, ece, cwr. Default is:\n"
 "                              syn.\n"
-"\n", argv[0]);
+"  -M mss                      Specify the MSS to use when generating the TCP\n"
+"                              MSS option. Default is 9140.\n"
+"", argv[0]);
 	exit(EXIT_FAILURE);
 }
