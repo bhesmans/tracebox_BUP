@@ -42,6 +42,11 @@ struct mp_capable {
 	uint64_t key;
 } __attribute__((__packed__));
 
+
+static u_short __mss = 9140;
+static uint64_t __mptcp_key = 0;
+static u_char __wscale = 14;
+
 static inline size_t mptcp_pack(struct tcp_opt *opt)
 {
 	struct mp_capable *mpc = (struct mp_capable *)&opt->opt_data.data8;
@@ -55,8 +60,6 @@ static inline size_t mptcp_pack(struct tcp_opt *opt)
 
 	return sizeof(*mpc) + 2;
 }
-
-static u_short __mss = 9140;
 
 static inline size_t mss_pack(struct tcp_opt *opt)
 {

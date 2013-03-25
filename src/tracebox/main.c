@@ -1,0 +1,333 @@
+/*
+ *  Copyright (C) 2013  Gregory Detal <gregory.detal@uclouvain.be>
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA  02110-1301, USA.
+ */
+
+#include <dnet.h>
+#include <pcap.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "libtracebox/packet.h"
+#include "libtracebox/tracebox.h"
+
+#include "options.h"
+#include "probe.h"
+
+#define error(format, args...)  \
+	fprintf(stderr, format "\n", ## args)
+
+static uint8_t		 hops_max = TBOX_HARD_TTL;
+static int		 resolve = 0;
+static uint16_t		 dport = 80;
+static int		 option_type = -1;
+static struct addr	 ip_dst;
+static pcap_t		*pcap = NULL;
+static pcap_dumper_t	*dumper = NULL;
+
+
+static struct {
+	u_char option_type;
+	char name[8];
+} tcp_options[] = {
+	{ TCP_OPT_MPTCP,	"mptcp" },
+	{ TCP_OPT_MSS,		"mss" },
+	{ TCP_OPT_WSCALE,	"wscale" },
+	{ TCP_OPT_TIMESTAMP,	"ts" },
+	{ TCP_OPT_SACKOK,	"sack" },
+};
+
+static struct {
+	u_char flag;
+	char name[8];
+} tcp_flags[] = {
+	{ TH_FIN,	"fin" },
+	{ TH_SYN,	"syn" },
+	{ TH_RST,	"rst" },
+	{ TH_PUSH,	"push" },
+	{ TH_ACK,	"ack" },
+	{ TH_URG,	"urg" },
+	{ TH_ECE,	"ece" },
+	{ TH_CWR,	"cwr" },
+};
+
+static uint8_t parse_flags(char *args)
+{
+	char *flag;
+	uint8_t flags = 0;
+
+	for (flag = strtok(args, ","); flag; flag = strtok(NULL, ",")) {
+		int i;
+		for (i = 0; i < sizeof(tcp_flags) / sizeof(tcp_flags[0]); ++i)
+			if (!strcmp(tcp_flags[i].name, flag))
+				flags |= tcp_flags[i].flag;
+	}
+	return flags;
+}
+
+static int resolve_host(int af, const char *host, struct addr *addr, char *name,
+		 size_t len)
+{
+	int		 n;
+	struct addrinfo	 hints;
+	struct addrinfo	*res = NULL;
+
+	bzero(&hints, sizeof(struct addrinfo));
+	hints.ai_flags = AI_CANONNAME;
+	hints.ai_family = af;
+	hints.ai_socktype = 0;
+
+	n = getaddrinfo(host, NULL, &hints, &res);
+	if (n != 0) return -1;
+
+	switch (af) {
+		case AF_INET:
+			addr_pack(addr, ADDR_TYPE_IP, IP_ADDR_BITS,
+				  &((struct sockaddr_in *)res->ai_addr)->sin_addr,
+				  IP_ADDR_LEN);
+			break;
+		case AF_INET6:
+			addr_pack(addr, ADDR_TYPE_IP6, IP6_ADDR_BITS,
+				  &((struct sockaddr_in6 *)res->ai_addr)->sin6_addr,
+				  IP6_ADDR_LEN);
+			break;
+	}
+
+	if (res->ai_canonname)
+		strncpy(name, res->ai_canonname, len);
+	else
+		addr_ntop(addr, name, len);
+
+	freeaddrinfo(res);
+
+	return 0;
+}
+
+static int generate_probe(u_char *packet, size_t *len)
+{
+	u_short sport = (getpid() & 0xffff) | 0x8000;
+	u_char opt[TCP_OPT_LEN_MAX];
+	size_t opt_len = TCP_OPT_LEN_MAX;
+	int ret;
+
+	if (option_type >= 0)
+		tcp_opt_pack(option_type, opt, &opt_len);
+	else
+		opt_len = 0;
+	*len = probe_pack(packet, IPPROTO_TCP, &ip_dst, &ip_dst, 0, sport,
+			  dport, opt, opt_len);
+	return 0;
+}
+
+static const char *change_str(uint32_t chg)
+{
+	if (chg & IP_DSCP)
+		printf("[DSCP changed] ");
+	if (chg & IP_ID)
+		printf("[IP ID] ");
+	if (chg & IP_TLEN_INCR)
+		printf("[TCP/IP option added] ");
+	if (chg & IP_FRAG)
+		printf("[Fragmented] ");
+	if ((chg & L4_SPORT) || (chg & IP_SADDR))
+		printf("[NAT] ");
+	if (chg & TCP_SEQ)
+		printf("[TCP seq changed] ");
+	if ((chg & IP_TLEN_DECR) || ((chg & TCP_OPT) && !(chg & SRV_REPLY)))
+		printf("[TCP opt removed/changed] ");
+	if ((chg & TCP_OPT) && (chg & SRV_REPLY))
+		printf("[Did not reply with opt] ");
+	if (chg & TCP_WIN)
+		printf("[TCP win changed] ");
+	if (chg & FULL_REPLY)
+		printf("[Reply ICMP full pkt] ");
+}
+
+static int open_dump(const char *file)
+{
+	pcap = pcap_open_dead(DLT_RAW, 65535);
+	if (!pcap)
+		return -1;
+
+	dumper = pcap_dump_open(pcap, file);
+	if (!dumper) {
+		pcap_close(pcap);
+		return -1;
+	}
+	return 0;
+}
+
+static void dump_pkt(const uint8_t const *pkt, size_t len)
+{
+	struct pcap_pkthdr ph = {
+		.caplen	= len,
+		.len	= len,
+	};
+
+	if (!dumper)
+		return;
+
+	if (gettimeofday(&ph.ts, NULL) < 0)
+		return;
+
+	pcap_dump((u_char *)dumper, &ph, pkt);
+}
+
+static int close_dump(void)
+{
+	if (dumper) {
+		pcap_close(pcap);
+		pcap_dump_close(dumper);
+	}
+}
+
+int main(int argc, char *argv[])
+{
+	char		 iface[INTF_NAME_LEN];
+	char		 c;
+	int		 ret;
+	int		 iface_set = 0;
+	char		 addr_name[255];
+	int		 i;
+	uint32_t	 chg = 0;
+	tbox_res_t	 res[TBOX_HARD_TTL];
+	uint8_t		 pkt[1024];
+	size_t		 pkt_len = sizeof(pkt);
+	uint8_t		 tcp_flags = TH_SYN;
+	char		*output_file = NULL;
+
+	if (geteuid() != 0) {
+		error("%s can only be used as root", argv[0]);
+		exit(EXIT_FAILURE);
+	}
+
+	srand(time(NULL) ^ getpid());
+
+	while ((c = getopt (argc, argv, ":i:m:o:O:p:f:M:hn")) != -1) {
+		switch (c) {
+			case 'i':
+				strncpy(iface, optarg, INTF_NAME_LEN);
+				iface_set = 1;
+				break;
+			case 'm':
+				hops_max = strtol(optarg, NULL, 10);
+				break;
+			case 'n':
+				resolve = 0;
+				break;
+			case 'p':
+				dport = strtol(optarg, NULL, 10);
+				break;
+			case 'f':
+				tcp_flags = parse_flags(optarg);
+				break;
+			case 'M':
+				__mss = strtol(optarg, NULL, 10);
+				break;
+			case 'o':
+				if (!strcmp(optarg, "list")) {
+					int i;
+					for (i = 0; i < sizeof(tcp_options) / sizeof(tcp_options[0]); ++i)
+						printf("%s ", tcp_options[i].name);
+					printf("\n");
+					exit(EXIT_SUCCESS);
+				} else {
+					int i;
+					for (i = 0; i < sizeof(tcp_options) / sizeof(tcp_options[0]); ++i)
+						if (!strcmp(tcp_options[i].name, optarg))
+							option_type = tcp_options[i].option_type;
+				}
+				break;
+			case 'O':
+				output_file = optarg;
+				break;
+			case 'h':
+				goto usage;
+			case ':':
+				error("missing option argument");
+			default:
+				goto usage;
+		}
+	}
+
+	if (optind == argc)
+		goto usage;
+
+	if (resolve_host(AF_INET, argv[argc-1], &ip_dst, addr_name,
+			 sizeof(addr_name)) < 0) {
+		error("error resolving %s", argv[argc-1]);
+		exit(EXIT_FAILURE);
+	}
+
+	if (output_file)
+		open_dump(output_file);
+
+	char buf[INET_ADDRSTRLEN];
+	addr_ntop(&ip_dst, buf, sizeof(buf));
+	printf("tracebox to %s (%s): %d hops max\n", addr_name, buf, hops_max);
+
+	probe_ip_setup(rand());
+	probe_tcp_setup(rand(), rand(), tcp_flags);
+	generate_probe(pkt, &pkt_len);
+
+	memset(res, 0, sizeof(res));
+	ret = tracebox(pkt, pkt_len, res, 4,
+		       TBOX_IFACE, iface_set ? iface : NULL,
+		       TBOX_MAX_TTL, hops_max,
+		       TBOX_SENT_CB, dump_pkt, TBOX_RECV_CB, dump_pkt);
+	close_dump();
+
+	for (i = 0; i < sizeof(res) / sizeof(res[0]); ++i) {
+		if (res[i].sent_probes == 0)
+			continue;
+
+		if (!res[i].recv_probes)
+			printf("%2d: *\n", i);
+		else {
+			printf("%2d: %s ", i, addr_ntoa(&res[i].from));
+			change_str(res[i].chg_prev);
+			printf("\n");
+		}
+
+	}
+
+	return(ret);
+usage:
+	fprintf(stderr, "Usage:\n"
+"  %s [ -hn ] [ OPTIONS ] host\n"
+"Options are:\n"
+"  -h                          Display this help and exit\n"
+"  -n                          Do not resolve IP adresses\n"
+"  -i device                   Specify a network interface to operate with\n"
+"  -m hops_max                 Set the max number of hops (max TTL to be\n"
+"                              reached). Default is 30\n"
+"  -o option                   Define the TCP option to put in the SYN segment.\n"
+"                              Default is none. -o list for a list of available\n"
+"                              options.\n"
+"  -O file                     Use file to dump the sent and received packets\n"
+"  -p port                     Specify the destination port to use when\n"
+"                              generating probes. Default is 80.\n"
+"  -f flag1[,flag2[,flag3...]] Specify the TCP flags to use. Values are: syn,\n"
+"                              ack, fin, rst, push, urg, ece, cwr. Default is:\n"
+"                              syn.\n"
+"  -M mss                      Specify the MSS to use when generating the TCP\n"
+"                              MSS option. Default is 9140.\n"
+"", argv[0]);
+	exit(EXIT_FAILURE);
+}

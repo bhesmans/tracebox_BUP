@@ -2,12 +2,14 @@ AC_INIT([tracebox], [0.0], [gregory.detal@uclouvain.be])
 
 AC_PREREQ([2.59])
 AM_INIT_AUTOMAKE([1.10 -Werror -Wall no-define foreign])
+AM_PROG_AR
 
 LT_INIT
 
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_PROG_CC
+AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 AC_C_BIGENDIAN([AC_DEFINE(__BIG_ENDIAN__)], [AC_DEFINE(__LITTLE_ENDIAN__)], [])
 
@@ -29,5 +31,7 @@ AM_CONDITIONAL(LINUX, test "$OSTYPE" = "linux-gnu")
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
+	src/libtracebox/Makefile
+	src/tracebox/Makefile
 ])
 AC_OUTPUT

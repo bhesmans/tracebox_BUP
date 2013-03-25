@@ -13,17 +13,23 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, 
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA  02110-1301, USA.
  */
 
-#ifndef __COMPAT_H__
-#define __COMPAT_H__
+#ifndef __PROBING_H__
+#define __PROBING_H__
 
-#ifdef __linux
-#include <dumbnet.h>
-#else
-#include <dnet.h>
-#endif
+#include "dnet_compat.h"
+
+typedef struct probing probing_t;
+
+probing_t *probing_init(const struct intf_entry *iface,
+			const struct addr *dst_addr, int timeout);
+
+int probing_send(probing_t *probing, const uint8_t *probe, size_t len);
+int probing_recv(probing_t *probing, uint8_t **reply, size_t *len);
+
+void probing_free(probing_t * probing);
 
 #endif

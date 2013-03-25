@@ -13,29 +13,43 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, 
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA  02110-1301, USA.
  */
 
-#ifndef __PROBING_H__
-#define __PROBING_H__
+#ifndef __PACKET_H__
+#define __PACKET_H__
 
-#include <sys/time.h>
-#include "compat.h"
+#include <stddef.h>
+#include <stdint.h>
 
-#define probe_nprobes	(3)
+enum packet_change_t {
+	IP_HLEN		= 1,
+	IP_DSCP		= 1 << 1,
+	IP_TLEN_INCR	= 1 << 2,
+	IP_TLEN_DECR	= 1 << 3,
+	IP_ID		= 1 << 4,
+	IP_FRAG		= 1 << 5,
+	IP_SADDR	= 1 << 6,
 
-typedef struct {
-	int (*send)(u_char ttl, u_char *packet, size_t *len);
-	int (*recv)(struct timeval ts, const u_char *sent_packet,
-		    size_t sent_len, const u_char *recv_packet,
-		    size_t recv_len);
-	void (*step)(void);
-	void (*timeout)(void);
-} prober_t;
+	L4_SPORT	= 1 << 7,
 
-void probing_loop(const char *iface, struct addr *ip_dst, int max_ttl,
-		  prober_t *prober, const char *dump_file);
-void probing_stop(void);
+	TCP_SEQ		= 1 << 8,
+	TCP_DOFF	= 1 << 9,
+	TCP_WIN		= 1 << 10,
+	TCP_OPT		= 1 << 11,
+	TCP_FLAGS	= 1 << 12,
+
+	UDP_LEN		= 1 << 13,
+	UDP_CHKSUM	= 1 << 14,
+
+	PAYLOAD		= 1 << 15,
+
+	FULL_REPLY	= 1 << 30,
+	SRV_REPLY	= 1 << 31,
+};
+
+uint32_t diff_packet(const uint8_t *orig, size_t orig_len,
+		     const uint8_t *other, size_t other_len);
 
 #endif

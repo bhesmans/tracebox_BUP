@@ -13,17 +13,17 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, 
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA  02110-1301, USA.
  */
 
 #ifndef __PROBE_H__
 #define __PROBE_H__
 
-#include <sys/types.h>
 #include <string.h>
+#include <sys/types.h>
 
-#include "compat.h"
+#include "libtracebox/dnet_compat.h"
 
 static inline size_t probe_ip_udp_pack(u_char *ptr, struct addr *ip_src,
 				       struct addr *ip_dst, u_char ttl,
@@ -39,7 +39,6 @@ static inline size_t probe_ip_udp_pack(u_char *ptr, struct addr *ip_src,
 	udp_pack_hdr(udp, sport, dport, UDP_HDR_LEN + dlen);
 	memcpy(payload, data, dlen);
 	ip_checksum(ip, IP_HDR_LEN + UDP_HDR_LEN + dlen);
-	
 	return (IP_HDR_LEN + UDP_HDR_LEN + dlen);
 }
 
@@ -65,7 +64,7 @@ static inline size_t probe_ip_tcp_pack(u_char *ptr, struct addr *ip_src,
 	u_char *option = (u_char *)(ptr + IP_HDR_LEN + TCP_HDR_LEN);
 	ip_pack_hdr(ip, 0x0, IP_HDR_LEN + TCP_HDR_LEN + olen, __id, 0x0, ttl,
 		    IPPROTO_TCP, ip_src->addr_ip, ip_dst->addr_ip);
-	tcp_pack_hdr(tcp, sport, dport, __seq, __ack, __tcp_flags, 65535, 0x0);
+	tcp_pack_hdr(tcp, sport, dport, __seq,  __tcp_flags & TH_ACK ? __ack : 0, __tcp_flags, 65535, 0x0);
 	tcp->th_off += olen / 4;
 	memcpy(option, opt, olen);
 	ip_checksum(ip, IP_HDR_LEN + TCP_HDR_LEN + olen);
