@@ -63,7 +63,7 @@ uint32_t diff_tcp(const struct tcp_hdr *orig, size_t orig_len,
 		/* Check if NOP */
 		flags |= (memcmp(orig + sizeof(*orig), other + sizeof(*other),
 				 (orig->th_off << 2) - sizeof(*orig))
-			? TCP_OPT : 0);·
+			? TCP_OPT : 0);
 	} else if ((orig->th_off << 2) != sizeof(*orig)) {
 		/* Has the destination replied with the option ? */
 		size_t data_off = other->th_off;
