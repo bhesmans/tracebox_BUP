@@ -29,17 +29,6 @@
 #define error(format, args...)  \
 	fprintf(stderr, "tracebox: " format "\n", ## args)
 
-#define TBOX_DEFAULT (tbox_conf_t) { \
-	.iface		= NULL, \
-	.min_ttl	= 0, \
-	.max_ttl	= TBOX_HARD_TTL, \
-	.nprobes	= 3, \
-	.probe_timeo	= 3, \
-	.noreply	= 3, \
-	.pkt_sent_cb	= NULL, \
-	.pkt_recv_cb	= NULL, \
-}
-
 #define TBOX_PARSE_OPT(o,f) { \
 	typeof(tbox.f) __val; \
 	if (((tbox_opt_t)opt) == ((tbox_opt_t)o)) { \
@@ -112,6 +101,7 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 	struct addr		 dst_addr;
 	probing_t		*probing;
 	int			 noreply = 0;
+	struct addr		 from;
 
 	switch (ip->ip_v) {
 	case 4:
@@ -137,10 +127,6 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 	if (!probing) {
 		error("Unable to start probing");
 		return(-1);
-	}
-	if (probing_send(probing, probe, len) < 0) {
-		error("Unable to send probe");
-		goto error;
 	}
 
 	cont = 1;
@@ -171,7 +157,7 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 			if (tbox->pkt_recv_cb)
 				tbox->pkt_recv_cb(pkt, pkt_len);
 
-			pkt = tbox_parse_pkt(pkt, &pkt_len, &res[ttl].from);
+			pkt = tbox_parse_pkt(pkt, &pkt_len, &from);
 			res[ttl].chg_start |= diff_packet(probe, len, pkt,
 							  pkt_len);
 			if (ppkt)
@@ -190,7 +176,8 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 		else
 			noreply++;
 
-		if (!addr_cmp(&dst_addr, &res[ttl].from))
+		res[ttl].from = from.addr_ip;
+		if (!addr_cmp(&dst_addr, &from))
 			break;
 	}
 

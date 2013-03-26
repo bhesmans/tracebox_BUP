@@ -49,8 +49,19 @@ typedef struct {
 	tbox_cb_t	 pkt_recv_cb;
 } tbox_conf_t;
 
+#define TBOX_DEFAULT (tbox_conf_t) { \
+	.iface		= NULL, \
+	.min_ttl	= 1, \
+	.max_ttl	= TBOX_HARD_TTL, \
+	.nprobes	= 3, \
+	.probe_timeo	= 3, \
+	.noreply	= 3, \
+	.pkt_sent_cb	= NULL, \
+	.pkt_recv_cb	= NULL, \
+}
+
 typedef struct {
-	struct addr	from;
+	uint32_t	from;
 	uint8_t		sent_probes;
 	uint8_t		recv_probes;
 	uint32_t	chg_start;

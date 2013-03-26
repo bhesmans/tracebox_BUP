@@ -300,7 +300,8 @@ int main(int argc, char *argv[])
 		if (!res[i].recv_probes)
 			printf("%2d: *\n", i);
 		else {
-			printf("%2d: %s ", i, addr_ntoa(&res[i].from));
+			struct in_addr addr = { .s_addr = res[i].from };
+			printf("%2d: %s ", i, inet_ntoa(addr));
 			change_str(res[i].chg_prev);
 			printf("\n");
 		}
