@@ -17,7 +17,6 @@
  *  MA  02110-1301, USA.
  */
 
-#include <dnet.h>
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +25,7 @@
 
 #include "libtracebox/packet.h"
 #include "libtracebox/tracebox.h"
+#include "libtracebox/dnet_compat.h"
 
 #include "options.h"
 #include "probe.h"
