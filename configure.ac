@@ -26,12 +26,27 @@ linux-gnu)
 	AC_CHECK_HEADER([dnet.h], [], [AC_MSG_ERROR([need libdnet])]);;
 esac
 
+AC_ARG_ENABLE(wrappers,
+	      AS_HELP_STRING([--disable-wrappers], [Disable wrappers]))
+
+AS_IF([test "x$enable_wrappers" != "xno"], [
+	AM_PATH_PYTHON(2.6.0)
+	PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
+	PYTHON_LIBS="-lpython$PYTHON_VERSION"
+	PYTHON_CFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
+	AC_SUBST([PYTHON_LIBS])
+	AC_SUBST([PYTHON_CFLAGS])
+])
+
 AM_CONDITIONAL(LINUX, test "$OSTYPE" = "linux-gnu")
+AM_CONDITIONAL(WRAPPERS, test "x$enable_wrappers" != "xno")
 
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
 	src/libtracebox/Makefile
 	src/tracebox/Makefile
+	src/wrappers/Makefile
+	src/wrappers/py/Makefile
 ])
 AC_OUTPUT
