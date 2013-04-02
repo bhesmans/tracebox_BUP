@@ -171,6 +171,7 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 
 			ppkt = pkt;
 			plen = pkt_len;
+			break;
 		}
 
 		if (res[ttl].recv_probes > 0)
