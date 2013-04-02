@@ -25,7 +25,7 @@
 typedef struct probing probing_t;
 
 probing_t *probing_init(const struct intf_entry *iface,
-			const struct addr *dst_addr, int timeout);
+			const struct addr *dst_addr, uint16_t port, int timeout);
 
 int probing_send(probing_t *probing, const uint8_t *probe, size_t len);
 int probing_recv(probing_t *probing, uint8_t **reply, size_t *len);

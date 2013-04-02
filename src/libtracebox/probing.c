@@ -27,9 +27,10 @@
 
 #include "probing.h"
 
-#define pcap_filter	("%s and (((tcp[13] & 4 == 4 or tcp[13] = 18) " \
-			 "and ip src %s) or (icmp and (icmp[0] = 11 or " \
-			 "icmp[0] = 3)) or (udp and ip src %s))")
+#define pcap_filter	("%s and (((tcp[13] & 4 == 4 or tcp[13] = 18) and " \
+			 "ip src %s and port %hu) or (icmp and " \
+			 "(icmp[0] = 11 or icmp[0] = 3)) or " \
+			 "(udp and ip src %s and port %hu))")
 
 struct probing {
 	pcap_t			*pcap;
@@ -40,7 +41,7 @@ struct probing {
 };
 
 static int probing_pcap_init(probing_t *probing, const char *iface,
-			     const struct addr *ip)
+			     const struct addr *ip, uint16_t port)
 {
 	char			pcap_errbuf[PCAP_ERRBUF_SIZE];
 	char			filter_exp[255];
@@ -57,7 +58,7 @@ static int probing_pcap_init(probing_t *probing, const char *iface,
 		return(-1);
 
 	addr_ntop(ip, addr_buf, sizeof(addr_buf));
-	sprintf(filter_exp, pcap_filter, "ip", addr_buf, addr_buf);
+	sprintf(filter_exp, pcap_filter, "ip", addr_buf, port, addr_buf, port);
 
 	ret = pcap_compile(probing->pcap, &fp, filter_exp, 0, net);
 	if (ret < 0)
@@ -94,7 +95,7 @@ error:
 }
 
 probing_t *probing_init(const struct intf_entry *iface,
-			const struct addr *dst_addr, int timeout)
+			const struct addr *dst_addr, uint16_t port, int timeout)
 {
 	probing_t *probing;
 
@@ -107,7 +108,7 @@ probing_t *probing_init(const struct intf_entry *iface,
 	probing->sendfd = eth_open(iface->intf_name);
 	if (probing->sendfd < 0)
 		goto error;
-	if (probing_pcap_init(probing, iface->intf_name, dst_addr) < 0)
+	if (probing_pcap_init(probing, iface->intf_name, dst_addr, port) < 0)
 		goto error_pcap;
 
 	return probing;

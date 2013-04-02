@@ -98,6 +98,7 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 	size_t			 plen;
 	struct intf_entry	 iface;
 	struct ip_hdr		*ip = (struct ip_hdr *)probe;
+	uint16_t		 port;
 	struct addr		 dst_addr;
 	probing_t		*probing;
 	int			 noreply = 0;
@@ -121,9 +122,10 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 	/* Ensure the packet uses the right source address */
 	ip->ip_src = iface.intf_addr.addr_ip;
 	ip_checksum(probe, ntohs(ip->ip_len));
+	port = ntohs(((struct udp_hdr *)(probe + (ip->ip_hl << 2)))->uh_sport);
 
 	/* Do the probing */
-	probing = probing_init(&iface, &dst_addr, 3);
+	probing = probing_init(&iface, &dst_addr, port, 3);
 	if (!probing) {
 		error("Unable to start probing");
 		return(-1);
