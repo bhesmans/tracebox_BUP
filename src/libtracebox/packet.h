@@ -25,25 +25,29 @@
 
 enum packet_change_t {
 	IP_HLEN		= 1,
+
 	IP_DSCP		= 1 << 1,
-	IP_TLEN_INCR	= 1 << 2,
-	IP_TLEN_DECR	= 1 << 3,
-	IP_ID		= 1 << 4,
-	IP_FRAG		= 1 << 5,
-	IP_SADDR	= 1 << 6,
+	IP_ECT		= 1 << 2,
+	IP_CE		= 1 << 3,
 
-	L4_SPORT	= 1 << 7,
+	IP_TLEN_INCR	= 1 << 4,
+	IP_TLEN_DECR	= 1 << 5,
+	IP_ID		= 1 << 6,
+	IP_FRAG		= 1 << 7,
+	IP_SADDR	= 1 << 8,
 
-	TCP_SEQ		= 1 << 8,
-	TCP_DOFF	= 1 << 9,
-	TCP_WIN		= 1 << 10,
-	TCP_OPT		= 1 << 11,
-	TCP_FLAGS	= 1 << 12,
+	L4_SPORT	= 1 << 9,
 
-	UDP_LEN		= 1 << 13,
-	UDP_CHKSUM	= 1 << 14,
+	TCP_SEQ		= 1 << 10,
+	TCP_DOFF	= 1 << 11,
+	TCP_WIN		= 1 << 12,
+	TCP_OPT		= 1 << 13,
+	TCP_FLAGS	= 1 << 14,
 
-	PAYLOAD		= 1 << 15,
+	UDP_LEN		= 1 << 15,
+	UDP_CHKSUM	= 1 << 16,
+
+	PAYLOAD		= 1 << 17,
 
 	FULL_REPLY	= 1 << 30,
 	SRV_REPLY	= 1 << 31,

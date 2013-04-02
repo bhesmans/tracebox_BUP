@@ -94,14 +94,30 @@ out:
 	return flags;
 }
 
+struct ip_tos {
+#if DNET_BYTESEX == DNET_BIG_ENDIAN
+	uint8_t	ip_dscp:6,
+		ip_ect:1,
+		ip_ce:1;
+#else
+	uint8_t	ip_ce:1,
+		ip_ect:1,
+		ip_dscp:6;
+#endif
+};
+
 uint32_t diff_ip(const struct ip_hdr *orig, size_t orig_len,
 		 const struct ip_hdr *other, size_t other_len)
 {
 	uint32_t flags = 0;
 	int reply = orig->ip_dst == other->ip_src;
+	struct ip_tos *orig_tos = (struct ip_tos *)orig;
+	struct ip_tos *other_tos = (struct ip_tos *)other;
 
 	flags |= (!reply && orig->ip_hl != other->ip_hl ? IP_HLEN : 0);
-	flags |= (!reply && orig->ip_tos != other->ip_tos ? IP_DSCP : 0);
+	flags |= (!reply && orig_tos->ip_dscp != other_tos->ip_dscp ? IP_DSCP : 0);
+	flags |= (!reply && orig_tos->ip_ect != other_tos->ip_ect ? IP_ECT : 0);
+	flags |= (!reply && orig_tos->ip_ce != other_tos->ip_ce ? IP_CE : 0);
 	flags |= (!reply && orig->ip_len < other->ip_len ? IP_TLEN_INCR : 0);
 	flags |= (!reply && orig->ip_len > other->ip_len ? IP_TLEN_DECR : 0);
 	flags |= (!reply && orig->ip_id != other->ip_id ? IP_ID : 0);
