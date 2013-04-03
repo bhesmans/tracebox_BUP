@@ -123,6 +123,30 @@ int probing_send(probing_t *probing, const uint8_t *probe, size_t len)
 	return ip_send(probing->sendfd, probe, len);
 }
 
+static int probing_offset(probing_t *probing)
+{
+	switch (pcap_datalink(probing->pcap)) {
+	case DLT_EN10MB:
+		return(14);
+	case DLT_NULL:
+	case DLT_PPP:
+		return(4);
+	case DLT_SLIP:
+		return(16);
+	case DLT_RAW:
+		return(0);
+	case DLT_SLIP_BSDOS:
+	case DLT_PPP_BSDOS:
+		return(24);
+	case DLT_ATM_RFC1483:
+		return(8);
+	case DLT_IEEE802:
+		return(22);
+	default:
+		return(-1);
+	}
+}
+
 int probing_recv(probing_t *probing, uint8_t **reply, size_t *len)
 {
 	int			 ret;
@@ -130,6 +154,7 @@ int probing_recv(probing_t *probing, uint8_t **reply, size_t *len)
 	struct pcap_pkthdr	 pcap_hdr;
 	struct timeval		 ts = {probing->timeout, 0};
 	fd_set			 read_fd;
+	int			 offset;
 
 	FD_ZERO(&read_fd);
 	FD_SET(probing->pcapfd, &read_fd);
@@ -137,17 +162,22 @@ int probing_recv(probing_t *probing, uint8_t **reply, size_t *len)
 	for ( ; ; ) {
 		ret = select(probing->pcapfd+1, &read_fd, NULL, NULL, &ts);
 		if (ret <= 0)
-			return -1;
+			return(-1);
 
 		packet = (uint8_t *)pcap_next(probing->pcap, &pcap_hdr);
-		if (packet == NULL)
+		if (!packet)
 			continue;
 
-		*reply = packet + ETH_HDR_LEN;
-		*len = pcap_hdr.len - ETH_HDR_LEN;
-		return 0;
+		/* Skip link-layer header */
+		offset = probing_offset(probing);
+		if (offset < 0)
+			return(-1);
+
+		*reply = packet + offset;
+		*len = pcap_hdr.len - offset;
+		return(0);
 	}
-	return -1;
+	return(-1);
 }
 
 void probing_free(probing_t * probing)
