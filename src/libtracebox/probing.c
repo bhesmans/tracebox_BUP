@@ -37,7 +37,7 @@ struct probing {
 	const struct intf_entry	*iface;
 	int			 pcapfd;
 	int			 timeout;
-	eth_t			*sendfd;
+	ip_t			*sendfd;
 };
 
 static int probing_pcap_init(probing_t *probing, const char *iface,
@@ -105,12 +105,11 @@ probing_t *probing_init(const struct intf_entry *iface,
 
 	probing->iface = iface;
 	probing->timeout = timeout;
-	probing->sendfd = eth_open(iface->intf_name);
-	if (probing->sendfd < 0)
+	probing->sendfd = ip_open();
+	if (!probing->sendfd)
 		goto error;
 	if (probing_pcap_init(probing, iface->intf_name, dst_addr, port) < 0)
 		goto error_pcap;
-
 	return probing;
 
 error_pcap:
@@ -119,64 +118,9 @@ error:
 	free(probing);
 	return(NULL);
 }
-
-static int probing_lookup_ether(struct addr *addr, struct addr *ether_dst)
-{
-	struct route_entry	rentry;
-	struct arp_entry	aentry;
-	route_t			*route;
-	arp_t			*arp;
-
-	if ((route = route_open()) == NULL)
-		return(-1);
-
-	memset(&rentry, 0, sizeof(rentry));
-	memset(&aentry, 0, sizeof(aentry));
-
-	rentry.route_dst = *addr;
-	if (route_get(route, &rentry) < 0)
-		goto error_route;
-
-	route_close(route);
-
-	if ((arp = arp_open()) == NULL)
-		return (-1);
-
-	aentry.arp_pa = rentry.route_gw;
-	if (arp_get(arp, &aentry) < 0)
-		goto error_arp;
-
-	*ether_dst = aentry.arp_ha;
-	arp_close(arp);
-
-	return(0);
-
-error_arp:
-	arp_close(arp);
-	return(-1);
-error_route:
-	route_close(route);
-	return(-1);
-}
-
 int probing_send(probing_t *probing, const uint8_t *probe, size_t len)
 {
-	u_char		 buffer[ETH_HDR_LEN + len];
-	struct ip_hdr	*ip;
-	struct eth_hdr	*eth;
-	struct addr	 ether_src = probing->iface->intf_link_addr;
-	struct addr	 ether_dst;
-	struct addr	 ip_dst;
-
-	ip = (struct ip_hdr *)probe;
-	addr_pack(&ip_dst, ADDR_TYPE_IP, IP_ADDR_BITS, &ip->ip_dst, IP_ADDR_LEN);
-	if (probing_lookup_ether(&ip_dst, &ether_dst) < 0)
-		return(-1);
-
-	eth_pack_hdr(buffer, ether_dst.addr_eth, ether_src.addr_eth, ETH_TYPE_IP);
-	memcpy(buffer+ETH_HDR_LEN, probe, len);
-
-	return eth_send(probing->sendfd, buffer, sizeof(buffer));
+	return ip_send(probing->sendfd, probe, len);
 }
 
 int probing_recv(probing_t *probing, uint8_t **reply, size_t *len)
@@ -210,6 +154,6 @@ void probing_free(probing_t * probing)
 {
 	close(probing->pcapfd);
 	pcap_close(probing->pcap);
-	eth_close(probing->sendfd);
+	ip_close(probing->sendfd);
 	free(probing);
 }
