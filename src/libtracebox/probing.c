@@ -108,6 +108,16 @@ probing_t *probing_init(const struct intf_entry *iface,
 	probing->sendfd = ip_open();
 	if (!probing->sendfd)
 		goto error;
+
+	#ifdef HAVE_IP_NODEFRAG
+	/* avoid reassembly when seding packets */
+	{
+		int n = 1;
+		if (setsockopt(*(int *)probing->sendfd, IPPROTO_IP, 22, &n, sizeof(n)) < 0)
+			goto error_pcap;
+	}
+	#endif
+
 	if (probing_pcap_init(probing, iface->intf_name, dst_addr, port) < 0)
 		goto error_pcap;
 	return probing;

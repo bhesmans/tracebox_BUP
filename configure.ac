@@ -26,6 +26,9 @@ linux-gnu)
 	AC_CHECK_HEADER([dnet.h], [], [AC_MSG_ERROR([need libdnet])]);;
 esac
 
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[#include <linux/in.h>]], [[IP_NODEFRAG;]])],
+	[AC_DEFINE(HAVE_IP_NODEFRAG)],[])
+
 AC_ARG_ENABLE(wrappers,
 	      AS_HELP_STRING([--disable-wrappers], [Disable wrappers]))
 
