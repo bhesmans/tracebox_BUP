@@ -113,7 +113,7 @@ probing_t *probing_init(const struct intf_entry *iface,
 	return probing;
 
 error_pcap:
-	eth_close(probing->sendfd);
+	ip_close(probing->sendfd);
 error:
 	free(probing);
 	return(NULL);
