@@ -168,7 +168,7 @@ static PyObject *tracebox_trace(PyObject *self, PyObject *args, PyObject *kwds)
 	char *probe;
 	int probe_len;
 	tbox_conf_t tbox = TBOX_DEFAULT;
-	tbox_res_t res[TBOX_HARD_TTL];
+	tbox_res_t res[TBOX_HARD_TTL+1];
 	int ret;
 	PyObject *dump = NULL;
 
