@@ -37,18 +37,18 @@ static PyObject *ProbeResult_reply(PyObject *self)
 	return PyString_FromStringAndSize(probe->res.reply, probe->res.reply_len);
 }
 
-#define ProbeResult_Macro(field, value) \
+#define ProbeResult_Macro(field, value, chg) \
 static PyObject *ProbeResult_ ## field (PyObject *self) \
 { \
 	ProbeResult *probe = (ProbeResult *) self; \
-	if (probe->res.chg_prev & (value)) \
+	if (probe->res.chg & (value)) \
 		Py_RETURN_TRUE; \
 	else \
 		Py_RETURN_FALSE; \
 }
 
 #define ProbeResult_has(field, value) \
-	ProbeResult_Macro(field##_changed, value)
+	ProbeResult_Macro(field##_changed, value, chg_start)
 
 #define ProbeResult_Fct(field) \
 	{ #field, (PyCFunction)ProbeResult_##field, METH_NOARGS, NULL }
@@ -73,9 +73,9 @@ ProbeResult_has(udp_len,	UDP_LEN);
 ProbeResult_has(udp_csum,	UDP_CHKSUM);
 ProbeResult_has(payload,	PAYLOAD);
 
-ProbeResult_Macro(changed,	(uint32_t)-1);
-ProbeResult_Macro(is_full_reply,FULL_REPLY);
-ProbeResult_Macro(is_srv_reply,	SRV_REPLY);
+ProbeResult_Macro(changed,	(uint32_t)-1,	chg_prev);
+ProbeResult_Macro(is_full_reply,FULL_REPLY,	chg_start);
+ProbeResult_Macro(is_srv_reply,	SRV_REPLY,	chg_start);
 
 static PyMethodDef ProbeResultMethods[] = {
 	{ "router", (PyCFunction)ProbeResult_router, METH_NOARGS, NULL },
