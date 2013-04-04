@@ -13,7 +13,7 @@ libtracebox_include_HEADERS = \
 	probing.h \
 	tracebox.h
 
-if LINUX
+if DUMBNET
 libtracebox_la_LIBADD = -lpcap -ldumbnet
 else
 libtracebox_la_LIBADD = -lpcap -ldnet

@@ -45,7 +45,7 @@ AC_ARG_ENABLE([planetlab],
 
 AS_IF([test "x$enable_planetlab" = "xyes"], [AC_DEFINE(HAVE_PLANETLAB)])
 
-AM_CONDITIONAL(LINUX, test "$OSTYPE" = "linux-gnu")
+AM_CONDITIONAL(DUMBNET, test "x$DUMBNET" != "xno")
 AM_CONDITIONAL(WRAPPERS, test "x$enable_wrappers" != "xno")
 
 AC_CONFIG_FILES([
