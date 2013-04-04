@@ -41,6 +41,11 @@ AS_IF([test "x$enable_wrappers" != "xno"], [
 	AC_SUBST([PYTHON_CFLAGS])
 ])
 
+AC_ARG_ENABLE([planetlab],
+	      AS_HELP_STRING([--enable-planetlab], [Enable planetlab support]))
+
+AS_IF([test "x$enable_planetlab" = "xyes"], [AC_DEFINE(HAVE_PLANETLAB)])
+
 AM_CONDITIONAL(LINUX, test "$OSTYPE" = "linux-gnu")
 AM_CONDITIONAL(WRAPPERS, test "x$enable_wrappers" != "xno")
 

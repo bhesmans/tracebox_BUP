@@ -109,6 +109,16 @@ probing_t *probing_init(const struct intf_entry *iface,
 	if (!probing->sendfd)
 		goto error;
 
+	#ifdef HAVE_PLANETLAB
+	{
+		struct sockaddr_in sin;
+		memset(& sin, 0, sizeof(sin));
+		sin.sin_port = htons(port);
+		bind(*(int *)probing->sendfd, (struct sockaddr *)&sin,
+		     sizeof(sin));
+	}
+	#endif
+
 	#ifdef HAVE_IP_NODEFRAG
 	/* avoid reassembly when seding packets */
 	{
