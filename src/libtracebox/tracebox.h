@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 #define TBOX_HARD_TTL	(15)
+#define TBOX_PKT_SIZE	(1400)
 
 typedef enum {
 	TBOX_IFACE,
@@ -66,6 +67,10 @@ typedef struct {
 	uint8_t		recv_probes;
 	uint32_t	chg_start;
 	uint32_t	chg_prev;
+	uint8_t		probe[TBOX_PKT_SIZE];
+	size_t		probe_len;
+	uint8_t		reply[TBOX_PKT_SIZE];
+	size_t		reply_len;
 } tbox_res_t;
 
 int tracebox(uint8_t *probe, size_t len, tbox_res_t *res, int nopts, ...);

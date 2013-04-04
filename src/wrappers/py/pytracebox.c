@@ -10,8 +10,7 @@ staticforward PyTypeObject ProbeResult_Type;
 typedef struct {
 	PyObject_HEAD
 	int		ttl;
-	const char	reply_address[16];
-	uint32_t	changes;
+	tbox_res_t	res;
 } ProbeResult;
 
 static void ProbeResult_dealloc(PyObject *self)
@@ -22,14 +21,27 @@ static void ProbeResult_dealloc(PyObject *self)
 static PyObject *ProbeResult_router(PyObject *self)
 {
 	ProbeResult *probe = (ProbeResult *) self;
-	return PyString_FromString(probe->reply_address);
+	struct in_addr addr = { .s_addr = probe->res.from, };
+	return PyString_FromString(inet_ntoa(addr));
+}
+
+static PyObject *ProbeResult_probe(PyObject *self)
+{
+	ProbeResult *probe = (ProbeResult *) self;
+	return PyString_FromStringAndSize(probe->res.probe, probe->res.probe_len);
+}
+
+static PyObject *ProbeResult_reply(PyObject *self)
+{
+	ProbeResult *probe = (ProbeResult *) self;
+	return PyString_FromStringAndSize(probe->res.reply, probe->res.reply_len);
 }
 
 #define ProbeResult_Macro(field, value) \
 static PyObject *ProbeResult_ ## field (PyObject *self) \
 { \
 	ProbeResult *probe = (ProbeResult *) self; \
-	if (probe->changes & (value)) \
+	if (probe->res.chg_prev & (value)) \
 		Py_RETURN_TRUE; \
 	else \
 		Py_RETURN_FALSE; \
@@ -67,6 +79,8 @@ ProbeResult_Macro(is_srv_reply,	SRV_REPLY);
 
 static PyMethodDef ProbeResultMethods[] = {
 	{ "router", (PyCFunction)ProbeResult_router, METH_NOARGS, NULL },
+	{ "probe", (PyCFunction)ProbeResult_probe, METH_NOARGS, NULL },
+	{ "reply", (PyCFunction)ProbeResult_reply, METH_NOARGS, NULL },
 	ProbeResult_Fct_has(ip_hlen),
 	ProbeResult_Fct_has(dscp),
 	ProbeResult_Fct_has(ect),
@@ -148,12 +162,9 @@ static PyObject *build_return(const tbox_conf_t *tbox, const tbox_res_t *res)
 
 		if (res[i].sent_probes && res[i].recv_probes) {
 			ProbeResult *probe = PyObject_NEW(ProbeResult, &ProbeResult_Type);
-			struct in_addr __addr = { .s_addr = res[i].from, };
-			const char *addr = inet_ntoa(__addr);
 			
 			probe->ttl = i;
-			probe->changes = res[i].chg_prev;
-			memcpy(&probe->reply_address, addr, strlen(addr) + 1);
+			memcpy(&probe->res, &res[i], sizeof(probe->res));
 			value = (PyObject *) probe;
 		} else
 			Py_INCREF(Py_None);

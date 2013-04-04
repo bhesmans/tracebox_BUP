@@ -28,7 +28,7 @@
 
 #define error(format, args...)  \
 	fprintf(stderr, "tracebox: " format "\n", ## args)
-
+#define min(a,b)	(a > b ? b : a)
 #define TBOX_PARSE_OPT(o,f) { \
 	typeof(tbox.f) __val; \
 	if (((tbox_opt_t)opt) == ((tbox_opt_t)o)) { \
@@ -104,6 +104,11 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 	int			 noreply = 0;
 	struct addr		 from;
 
+	if (len > TBOX_PKT_SIZE) {
+		error("Probe too big");
+		return(-1);
+	}
+
 	switch (ip->ip_v) {
 	case 4:
 		addr_pack(&dst_addr, ADDR_TYPE_IP, IP_ADDR_BITS, &ip->ip_dst,
@@ -151,6 +156,8 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 				goto error;
 			}
 			res[ttl].sent_probes++;
+			res[ttl].probe_len = min(len, TBOX_PKT_SIZE);
+			memcpy(res[ttl].probe, probe, res[ttl].probe_len);
 
 			if (probing_recv(probing, &pkt, &pkt_len) < 0)
 				continue;
@@ -169,6 +176,8 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 				res[ttl].chg_prev |= res[ttl].chg_start;
 			res[ttl].chg_start |= (len <= pkt_len ? FULL_REPLY : 0);
 
+			res[ttl].reply_len = min(pkt_len, TBOX_PKT_SIZE);
+			memcpy(res[ttl].reply, pkt, pkt_len);
 			ppkt = pkt;
 			plen = pkt_len;
 			break;
