@@ -1,7 +1,7 @@
 AC_INIT([tracebox], [0.0], [gregory.detal@uclouvain.be])
 
 AC_PREREQ([2.59])
-AM_INIT_AUTOMAKE([1.10 -Werror -Wall no-define foreign])
+AM_INIT_AUTOMAKE([1.10 -Werror -Wall no-define foreign -Wno-extra-portability])
 
 LT_INIT
 
