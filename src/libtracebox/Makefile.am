@@ -1,4 +1,6 @@
 
+EXTRA_DIST = dnet_compat.h
+
 lib_LTLIBRARIES = libtracebox.la
 
 libtracebox_la_SOURCES = \
