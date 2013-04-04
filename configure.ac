@@ -55,5 +55,6 @@ AC_CONFIG_FILES([
 	src/tracebox/Makefile
 	src/wrappers/Makefile
 	src/wrappers/py/Makefile
+	src/wrappers/py/examples/Makefile
 ])
 AC_OUTPUT

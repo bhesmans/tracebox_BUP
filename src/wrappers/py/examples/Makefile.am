@@ -1,0 +1,23 @@
+
+doc_in = \
+	args.in
+doc_py = \
+	detect_ipid.py \
+	detect_full_icmp.py
+
+doc_examplesdir = $(docdir)/examples
+doc_examples_DATA = \
+	$(doc_in:.in=.py) \
+	$(doc_py)
+
+EXTRA_DIST = \
+	$(doc_in) \
+	$(doc_py)
+
+CLEANFILES = $(doc_in:.in=.py)
+
+SUFFIXES = .in .py
+
+.in.py:
+	sed -e 's,[@]pythondir[@],$(pythondir),g' < $(srcdir)/$< > $@
+	chmod +x $@

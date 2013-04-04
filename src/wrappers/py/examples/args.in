@@ -1,0 +1,19 @@
+import sys; sys.path.insert(1, '@pythondir@')
+import logging; logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+import os
+
+try:
+    import scapy
+except:
+    print >> sys.stderr, 'You need to install scapy to run this script.'
+    sys.exit(-1)
+
+if not os.geteuid() == 0:
+        print >> sys.stderr, 'This script must be run as root.'
+        sys.exit(-1)
+
+def parse_args():
+    if len(sys.argv) < 2:
+        print >> sys.stderr, 'You need to specify a destination.'
+        sys.exit(-1)
+    return sys.argv[1]
