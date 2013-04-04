@@ -20,10 +20,10 @@
 #ifndef __DNET_COMPAT_H__
 #define __DNET_COMPAT_H__
 
-#ifdef __linux
-#include <dumbnet.h>
-#else
+#ifdef HAVE_DNET
 #include <dnet.h>
+#else
+#include <dumbnet.h>
 #endif
 
 #endif

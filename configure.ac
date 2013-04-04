@@ -18,12 +18,11 @@ AC_CHECK_HEADER([net/ethernet.h])
 AC_CHECK_HEADER([netinet/ip.h])
 AC_CHECK_HEADER([net/bpf.h], [AC_DEFINE(HAVE_NET_BPF_H)], [])
 AC_CHECK_HEADER([pcap.h], [], [AC_MSG_ERROR([need libcap])])
-case $OSTYPE in
-linux-gnu)
-	AC_CHECK_HEADER([dumbnet.h], [], [AC_MSG_ERROR([need libdumbnet-dev])]);;
-*)
-	AC_CHECK_HEADER([dnet.h], [], [AC_MSG_ERROR([need libdnet])]);;
-esac
+AC_CHECK_HEADER([dnet.h], [AC_DEFINE(HAVE_DNET)], [DNET="no"])
+AC_CHECK_HEADER([dumbnet.h], [AC_DEFINE(HAVE_DUMBNET)], [DUMBNET="no"])
+
+AS_IF([test "x$DNET" = "xno" || test "x$DUMBNET" = "xno"], [],
+      [AC_MSG_ERROR([need libdnet])])
 
 AC_RUN_IFELSE([AC_LANG_PROGRAM([[#include <linux/in.h>]], [[IP_NODEFRAG;]])],
 	[AC_DEFINE(HAVE_IP_NODEFRAG)],[])
