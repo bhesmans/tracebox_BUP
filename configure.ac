@@ -21,6 +21,7 @@ AC_CHECK_HEADER([net/bpf.h], [AC_DEFINE(HAVE_NET_BPF_H)], [])
 AC_CHECK_HEADER([pcap.h], [], [AC_MSG_ERROR([need libcap])])
 AC_CHECK_HEADER([dnet.h], [AC_DEFINE(HAVE_DNET)], [DNET="no"])
 AC_CHECK_HEADER([dumbnet.h], [AC_DEFINE(HAVE_DUMBNET)], [DUMBNET="no"])
+AC_PATH_PROG([DEBUILD], [dpkg-buildpackage], [notfound])
 
 AS_IF([test "x$DNET" = "xno" || test "x$DUMBNET" = "xno"], [],
       [AC_MSG_ERROR([need libdnet])])
@@ -44,6 +45,17 @@ AC_ARG_ENABLE([planetlab],
 	      AS_HELP_STRING([--enable-planetlab], [Enable planetlab support]))
 
 AS_IF([test "x$enable_planetlab" = "xyes"], [AC_DEFINE(HAVE_PLANETLAB)])
+
+AC_ARG_ENABLE([deb],
+	[AS_HELP_STRING([--enable-deb=@<:@yes/no@:>@],
+		[Configure for building Debian package @<:@default=no@:>@ (requires dpkg-buildpackage)])],
+	[AS_IF([test "x$enable_deb" = "xyes"],
+		[AS_IF([test "x$DEBUILD" = "xnotfound"],
+			[AC_MSG_ERROR([dpkg-buildpackage is required for --enable-deb])],
+		[test "x$enable_rpm" = "xyes"],
+			[AC_MSG_ERROR([--enable-rpm and --enable-deb are mutually exclusive])])])],
+	[enable_deb=no])
+AM_CONDITIONAL([BUILDING_DEB], [test "x$enable_deb" = "xyes"])
 
 AM_CONDITIONAL(DUMBNET, test "x$DUMBNET" != "xno")
 AM_CONDITIONAL(WRAPPERS, test "x$enable_wrappers" != "xno")

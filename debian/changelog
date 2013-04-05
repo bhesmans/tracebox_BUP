@@ -1,0 +1,5 @@
+tracebox (0.0-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Gregory Detal <gregory.detal@uclouvain.be>  Fri, 05 Apr 2013 14:09:14 +0200

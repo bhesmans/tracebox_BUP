@@ -3,6 +3,8 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = src
 
+EXTRA_DIST = README.md
+
 build-dist: dist
 	case '$(DIST_ARCHIVES)' in \
 	*.tar.gz*) \
@@ -56,3 +58,38 @@ build-dist: dist
 	  || exit 1
 	  cd $(distdir)/_inst && tardir="." && $(am__tar) | GZIP=$(GZIP_ENV) gzip -c >$(abs_srcdir)/$(distdir)_build.tar.gz && cd -
 	  $(am__post_remove_distdir)
+
+if BUILDING_DEB
+DEBSOURCEPKG=$(PACKAGE)_$(VERSION).orig.tar.gz
+DEBSOURCEDIR=$(PACKAGE)-$(VERSION)
+deb: dist
+	@echo "Building Debian package..."
+	@if test ! -d debian; then \
+		echo "The files needed for building a Debian package are not" \
+		"included by default in the distribution. To build a package, check" \
+		"out the project from source control."; \
+		exit 1; \
+	fi; \
+	mv -f $(PACKAGE)-$(VERSION).tar.gz $(DEBSOURCEPKG) && \
+	GZIP=$(GZIP_ENV) gzip -dc $(DEBSOURCEPKG) | $(am__untar) && \
+	$(MKDIR_P) $(DEBSOURCEDIR)/debian && \
+	cp \
+		debian/changelog \
+		debian/compat \
+		debian/control \
+		debian/copyright \
+		debian/docs \
+		debian/menu \
+		debian/rules \
+		$(DEBSOURCEDIR)/debian && \
+	cd $(DEBSOURCEDIR) && \
+	$(DEBUILD) -rfakeroot -D -us -uc; \
+	cd $(srcdir); \
+	rm --force $(DEBSOURCEPKG); \
+	rm --recursive --force $(DEBSOURCEDIR)
+	$(am__post_remove_distdir)
+else
+deb:
+	@echo "To build a Debian package, you must run configure with --enable-deb."
+	@exit 1
+endif

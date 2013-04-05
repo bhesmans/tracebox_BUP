@@ -1,0 +1,13 @@
+Source: tracebox
+Section: net
+Priority: optional
+Maintainer: Gregory Detal <gregory.detal@uclouvain.be>
+Build-Depends: debhelper (>= 8.0.0), autotools-dev, python-dev, libpcap-dev, libdumbnet-dev 
+Standards-Version: 3.9.3
+Homepage: http://www.tracebox.org
+
+Package: tracebox
+Architecture: all
+Depends:  ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>
