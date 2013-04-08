@@ -61,13 +61,18 @@ uint32_t diff_tcp(const struct tcp_hdr *orig, size_t orig_len,
 
 	if (!reply && (flags & TCP_DOFF)) {/* Same data offset */
 		/* Check if NOP */
-		flags |= (memcmp(orig + sizeof(*orig), other + sizeof(*other),
+		flags |= TCP_OPT;
+	} else if (!reply) {
+		flags |= (memcmp(((uint8_t *)orig) + sizeof(*orig),
+				 ((uint8_t *)other) + sizeof(*other),
 				 (orig->th_off << 2) - sizeof(*orig))
 			? TCP_OPT : 0);
-	} else if ((orig->th_off << 2) != sizeof(*orig)) {
+	} else if ((orig->th_off << 2) != sizeof(*orig) &&
+		   !(other->th_flags & TH_RST)) {
 		/* Has the destination replied with the option ? */
-		size_t data_off = other->th_off;
+		size_t data_off = other->th_off << 2;
 		size_t opt_off = sizeof(*other);
+
 		if (opt_off > 0) {
 			struct tcp_opt *opt, *orig_opt;
 			int find = 0;
@@ -80,7 +85,12 @@ uint32_t diff_tcp(const struct tcp_hdr *orig, size_t orig_len,
 
 				if (opt->opt_type == orig_opt->opt_type)
 					goto out;
-				opt_off += opt->opt_len;
+
+				if (opt->opt_type == TCP_OPT_EOL ||
+				    opt->opt_type == TCP_OPT_NOP)
+					opt_off += 1;
+				else
+					opt_off += opt->opt_len;
 			}
 			flags |= TCP_OPT;
 		}
