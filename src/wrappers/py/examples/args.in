@@ -1,19 +1,59 @@
 import sys; sys.path.insert(1, '@pythondir@')
 import logging; logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
-import os
+import os, time
 
 try:
-    import scapy
+    import argparse
+except:
+    print >> sys.stderr, 'You need to install argparse to run this script.'
+    sys.exit(-1)
+
+try:
+    from scapy.all import IP, TCP, PcapWriter
 except:
     print >> sys.stderr, 'You need to install scapy to run this script.'
+    sys.exit(-1)
+
+try:
+    import tracebox
+except:
+    print >> sys.stderr, 'You need to install tracebox to run this script.'
     sys.exit(-1)
 
 if not os.geteuid() == 0:
         print >> sys.stderr, 'This script must be run as root.'
         sys.exit(-1)
 
+args = {}
+
 def parse_args():
-    if len(sys.argv) < 2:
-        print >> sys.stderr, 'You need to specify a destination.'
-        sys.exit(-1)
-    return sys.argv[1]
+    global args
+    parser = argparse.ArgumentParser()
+    parser.add_argument("destination", type=str)
+    parser.add_argument("-d", "--dport", type=int, default=80)
+    parser.add_argument("-O", "--output", type=str)
+    args = parser.parse_args()
+    return args.destination, args.dport
+
+
+class __Pkt(object):
+    def __init__(self, pkt):
+        self.pkt = pkt
+        self.time = time.time()
+
+    def __str__(self):
+        return self.pkt
+
+pkts = []
+def dump_fct(pkt):
+    pkts.append(__Pkt(pkt))
+
+def do_tracebox(probe):
+    pcap = None
+    if args.output:
+        pcap = PcapWriter(args.output, linktype = 101, sync = True)
+    ret = tracebox.trace("%s" % probe, dump = dump_fct)
+    if pcap:
+        pcap.write(pkts)
+        pcap.close()
+    return ret
