@@ -50,6 +50,9 @@ static PyObject *ProbeResult_ ## field (PyObject *self) \
 #define ProbeResult_has(field, value) \
 	ProbeResult_Macro(field##_changed, value, chg_prev)
 
+#define ProbeResult_has_p(field, value, chg) \
+	ProbeResult_Macro(field##_changed, value,  chg)
+
 #define ProbeResult_Fct(field) \
 	{ #field, (PyCFunction)ProbeResult_##field, METH_NOARGS, NULL }
 #define ProbeResult_Fct_has(field) ProbeResult_Fct(field##_changed)
@@ -65,13 +68,13 @@ ProbeResult_has(frag,		IP_FRAG);
 ProbeResult_has(source_addr,	IP_SADDR);
 ProbeResult_has(source_port,	L4_SPORT);
 ProbeResult_has(tcp_seq,	TCP_SEQ);
-ProbeResult_has(tcp_hlen,	TCP_DOFF);
-ProbeResult_has(tcp_rwin,	TCP_WIN);
-ProbeResult_has(tcp_flags,	TCP_FLAGS);
-ProbeResult_has(tcp_opt,	TCP_OPT);
+ProbeResult_has_p(tcp_hlen,	TCP_DOFF, chg_start);
+ProbeResult_has_p(tcp_rwin,	TCP_WIN, chg_start);
+ProbeResult_has_p(tcp_flags,	TCP_FLAGS, chg_start);
+ProbeResult_has_p(tcp_opt,	TCP_OPT, chg_start);
 ProbeResult_has(udp_len,	UDP_LEN);
 ProbeResult_has(udp_csum,	UDP_CHKSUM);
-ProbeResult_has(payload,	PAYLOAD);
+ProbeResult_has_p(payload,	PAYLOAD, chg_start);
 
 ProbeResult_Macro(changed,	(uint32_t)-1,	chg_prev);
 ProbeResult_Macro(is_full_reply,FULL_REPLY,	chg_start);
