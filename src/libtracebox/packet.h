@@ -27,8 +27,7 @@ enum packet_change_t {
 	IP_HLEN		= 1,
 
 	IP_DSCP		= 1 << 1,
-	IP_ECT		= 1 << 2,
-	IP_CE		= 1 << 3,
+	IP_ECN		= 1 << 2,
 
 	IP_TLEN_INCR	= 1 << 4,
 	IP_TLEN_DECR	= 1 << 5,

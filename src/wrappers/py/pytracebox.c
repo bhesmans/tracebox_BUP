@@ -60,8 +60,7 @@ static PyObject *ProbeResult_ ## field (PyObject *self) \
 
 ProbeResult_has(ip_hlen,	IP_HLEN);
 ProbeResult_has(dscp,		IP_DSCP);
-ProbeResult_has(ect,		IP_ECT);
-ProbeResult_has(ce,		IP_CE);
+ProbeResult_has(ecn,		IP_ECN);
 ProbeResult_has(ip_tlen,	IP_TLEN_INCR | IP_TLEN_DECR);
 ProbeResult_has(ip_id,		IP_ID);
 ProbeResult_has(frag,		IP_FRAG);
@@ -86,8 +85,7 @@ static PyMethodDef ProbeResultMethods[] = {
 	{ "reply", (PyCFunction)ProbeResult_reply, METH_NOARGS, NULL },
 	ProbeResult_Fct_has(ip_hlen),
 	ProbeResult_Fct_has(dscp),
-	ProbeResult_Fct_has(ect),
-	ProbeResult_Fct_has(ce),
+	ProbeResult_Fct_has(ecn),
 	ProbeResult_Fct_has(ip_tlen),
 	ProbeResult_Fct_has(ip_id),
 	ProbeResult_Fct_has(frag),

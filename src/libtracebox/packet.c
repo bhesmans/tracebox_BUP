@@ -107,11 +107,9 @@ out:
 struct ip_tos {
 #if DNET_BYTESEX == DNET_BIG_ENDIAN
 	uint8_t	ip_dscp:6,
-		ip_ect:1,
-		ip_ce:1;
+		ip_ecn:2;
 #else
-	uint8_t	ip_ce:1,
-		ip_ect:1,
+	uint8_t	ip_ecn:2,
 		ip_dscp:6;
 #endif
 };
@@ -126,8 +124,7 @@ uint32_t diff_ip(const struct ip_hdr *orig, size_t orig_len,
 
 	flags |= (!reply && orig->ip_hl != other->ip_hl ? IP_HLEN : 0);
 	flags |= (!reply && orig_tos->ip_dscp != other_tos->ip_dscp ? IP_DSCP : 0);
-	flags |= (!reply && orig_tos->ip_ect != other_tos->ip_ect ? IP_ECT : 0);
-	flags |= (!reply && orig_tos->ip_ce != other_tos->ip_ce ? IP_CE : 0);
+	flags |= (orig_tos->ip_ecn != other_tos->ip_ecn ? IP_ECN : 0);
 	flags |= (!reply && orig->ip_len < other->ip_len ? IP_TLEN_INCR : 0);
 	flags |= (!reply && orig->ip_len > other->ip_len ? IP_TLEN_DECR : 0);
 	flags |= (!reply && orig->ip_id != other->ip_id ? IP_ID : 0);
