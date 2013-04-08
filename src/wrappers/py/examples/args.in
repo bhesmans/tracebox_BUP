@@ -9,7 +9,7 @@ except:
     sys.exit(-1)
 
 try:
-    from scapy.all import IP, TCP, PcapWriter, fragment
+    from scapy.all import IP, TCP, UDP, PcapWriter, fragment
 except:
     print >> sys.stderr, 'You need to install scapy to run this script.'
     sys.exit(-1)

@@ -28,7 +28,8 @@ def length(res):
     for ttl, r in res.iteritems():
         if r and r.is_srv_reply():
             return ttl
-        last_r = ttl
+        if r:
+            last_r = ttl
     return last_r
 
 srv_ttl = length(do_tracebox(probe1))
