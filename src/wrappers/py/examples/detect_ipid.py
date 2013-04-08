@@ -25,5 +25,3 @@ if last_res and last_res.is_srv_reply() and not changed:
     print "The IP Identification field was not modified between you and the destination (%s)." % (last_res.router())
 elif last_res and not changed:
     print "The IP Identification field was not modified between you and the last router that replied (%s)." % (last_res.router())
-else:
-    print "ICMP packets seem to be filtered."

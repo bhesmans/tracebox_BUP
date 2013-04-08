@@ -11,7 +11,7 @@ def mp_capable(key = random.randint(0, 2**64-1)):
 
 def probe_opt(opt = None):
     opts = [opt] if opt else []
-    return IP(dst=dest, proto="tcp", id=random.randint(0, 2**16-1)) / \
+    return IP(dst=dest, proto="tcp") / \
               TCP(seq=random.randint(0, 2**32-1),
                   sport=random.randint(0, 2**16-1),
                   dport=dport, flags="S", options = opts).build()

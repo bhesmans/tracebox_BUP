@@ -5,7 +5,7 @@ import random
 
 dest, dport = parse_args()
 
-probe = IP(dst=dest, proto="tcp", id=random.randint(0, 2**16-1)) / \
+probe = IP(dst=dest, proto="tcp") / \
         TCP(seq=random.randint(0, 2**32-1),
             sport=random.randint(0, 2**16-1),
             dport=dport, flags="S").build()
