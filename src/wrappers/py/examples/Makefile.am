@@ -7,7 +7,8 @@ doc_py = \
 	detect_tcp_seq_changes.py \
 	detect_tcp_opts.py \
 	detect_tcp_win_changes.py \
-	detect_ecn.py
+	detect_ecn.py \
+	detect_frags.py
 
 doc_examplesdir = $(docdir)/examples
 doc_examples_DATA = \
