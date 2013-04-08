@@ -10,7 +10,8 @@ doc_py = \
 	detect_ecn.py \
 	detect_frags.py \
 	detect_statefull.py \
-	detect_proxy.py
+	detect_proxy.py \
+	detect_all.sh
 
 doc_examplesdir = $(docdir)/examples
 doc_examples_DATA = \
