@@ -3,7 +3,8 @@ doc_in = \
 	args.in
 doc_py = \
 	detect_ipid.py \
-	detect_full_icmp.py
+	detect_full_icmp.py \
+	detect_tcp_seq_changes.py
 
 doc_examplesdir = $(docdir)/examples
 doc_examples_DATA = \
