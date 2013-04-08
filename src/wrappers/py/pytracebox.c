@@ -48,7 +48,7 @@ static PyObject *ProbeResult_ ## field (PyObject *self) \
 }
 
 #define ProbeResult_has(field, value) \
-	ProbeResult_Macro(field##_changed, value, chg_start)
+	ProbeResult_Macro(field##_changed, value, chg_prev)
 
 #define ProbeResult_Fct(field) \
 	{ #field, (PyCFunction)ProbeResult_##field, METH_NOARGS, NULL }
