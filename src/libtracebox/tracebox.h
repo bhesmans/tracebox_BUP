@@ -23,7 +23,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define TBOX_HARD_TTL	(15)
+#define TBOX_HARD_TTL	(30)
 #define TBOX_PKT_SIZE	(1400)
 
 typedef enum {

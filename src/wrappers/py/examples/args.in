@@ -62,7 +62,7 @@ pkts = []
 def dump_fct(pkt):
     pkts.append(__Pkt(pkt))
 
-def do_tracebox(probe, max_ttl = 15, nprobes = 3):
+def do_tracebox(probe, max_ttl = 30, nprobes = 3):
     pcap = None
     if args.output:
         pcap = PcapWriter(args.output, linktype = 101, sync = True, append = True)
