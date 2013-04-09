@@ -29,3 +29,8 @@ SUFFIXES = .in .py
 .in.py:
 	sed -e 's,[@]pythondir[@],$(pythondir),g' < $(srcdir)/$< > $@
 	chmod +x $@
+
+install-data-hook:
+	for i in $(doc_examples_DATA); do \
+		chmod +x $(doc_examplesdir)/$$i; \
+	done
