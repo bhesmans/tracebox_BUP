@@ -2,6 +2,18 @@ import sys; sys.path.insert(1, '@pythondir@')
 import logging; logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 import os, time
 
+reporting = @reporting_enabled@
+
+if reporting:
+    import base64
+    from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
+    try:
+        import simplejsonrpc as jsonrpc
+    except:
+        print >> sys.stderr, 'You need to install simple-jsonrpc to run this script.'
+        sys.exit(1)
+    server = jsonrpc.Server("http://%s:8000/rpc" % "@reporting_server@")
+
 try:
     import argparse
 except:
@@ -30,6 +42,8 @@ def parse_args():
     global args
     parser = argparse.ArgumentParser()
     parser.add_argument("destination", type=str)
+    if reporting:
+        parser.add_argument("-n", "--noreport", action='store_true', default=False)
     parser.add_argument("-d", "--dport", type=int, default=80)
     parser.add_argument("-O", "--output", type=str)
     args = parser.parse_args()
@@ -53,6 +67,12 @@ def do_tracebox(probe, max_ttl = 15, nprobes = 3):
     if args.output:
         pcap = PcapWriter(args.output, linktype = 101, sync = True, append = True)
     ret = tracebox.trace("%s" % probe, dump = dump_fct, max_ttl = max_ttl, nprobes = nprobes)
+    if reporting and not args.noreport:
+        try:
+            exp = os.path.basename(sys.argv[0]).split('.')[0]
+            server.report(exp, [(base64.b64encode(pkt.pkt), pkt.time) for pkt in pkts])
+        except:
+            print "Unable to report result"
     if pcap:
         pcap.write(pkts)
         pcap.close()

@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+
+import sys; sys.path.insert(1, '@pythondir@')
+import logging; logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+
+import base64, os, time
+from wsgiref.simple_server import WSGIServer, WSGIRequestHandler, make_server
+try:
+    import simplejsonrpc as jsonrpc
+except:
+    print >> sys.stderr, 'You need to install simple-jsonrpc to run this script.'
+    sys.exit(1)
+
+try:
+    import argparse
+except:
+    print >> sys.stderr, 'You need to install argparse to run this script.'
+    sys.exit(-1)
+
+try:
+    from scapy.all import PcapWriter
+except:
+    print >> sys.stderr, 'You need to install scapy to run this script.'
+    sys.exit(-1)
+
+class PcapPkt(object):
+    def __init__(self, pkt, time):
+        self.pkt = pkt
+        self.time = time
+
+    def __str__(self):
+        return self.pkt
+
+out_dir = None
+
+class Reporting(jsonrpc.JsonrpcHandler):
+    def _report(self, exp, pkts):
+        dir = os.path.join(out_dir, exp)
+        try:
+            os.makedirs(dir)
+        except: pass
+        file = os.path.join(dir, "%s.pcap" % str(int(time.time() * 1e6)))
+        pcap = PcapWriter(file, linktype = 101)
+        pcap.write([PcapPkt(base64.b64decode(p), t) for p,t in pkts])
+        pcap.close()
+
+    def dispatch(self, method_name):
+        try:
+            return getattr(self, "_%s" % method_name)
+        except Exception, e:
+            return None
+
+report = Reporting()
+
+def WSGIApp(environ, start_response):
+    content_length = int(environ['CONTENT_LENGTH'])
+    request = environ['wsgi.input'].read(content_length)
+    result = report.handle(request)
+    start_response("200 OK", [])
+    return [result]
+
+def main(args):
+    global out_dir
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("output", type=str)
+    args = parser.parse_args()
+    out_dir = args.output
+    rpcserver = make_server('', 8000, WSGIApp)
+    rpcserver.serve_forever()
+
+
+if __name__ == "__main__":
+    main(sys.argv)

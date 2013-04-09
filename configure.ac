@@ -41,6 +41,11 @@ AS_IF([test "x$enable_wrappers" != "xno"], [
 	AC_SUBST([PYTHON_CFLAGS])
 ])
 
+AC_ARG_ENABLE([reporting],
+	    AS_HELP_STRING([--enable-reporting=DIR], [Enable reporting]),
+	    [AC_SUBST(REPORTING_SERVER, ["${enableval}"])])
+AM_CONDITIONAL([ENABLE_REPORTING], [test "x$enable_reporting" != "x"])
+
 AC_ARG_ENABLE([planetlab],
 	      AS_HELP_STRING([--enable-planetlab], [Enable planetlab support]))
 

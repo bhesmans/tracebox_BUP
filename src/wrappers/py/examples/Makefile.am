@@ -1,6 +1,7 @@
 
 doc_in = \
-	args.in
+	args.in \
+	reporting_server.in
 doc_py = \
 	detect_ipid.py \
 	detect_full_icmp.py \
@@ -26,8 +27,16 @@ CLEANFILES = $(doc_in:.in=.py)
 
 SUFFIXES = .in .py
 
+if ENABLE_REPORTING
+REPORTING = True
+else
+REPORTING = False
+endif
+
 .in.py:
-	sed -e 's,[@]pythondir[@],$(pythondir),g' < $(srcdir)/$< > $@
+	sed -e 's,[@]pythondir[@],$(pythondir),g' \
+	    -e 's,[@]reporting_enabled[@],$(REPORTING),g' \
+	    -e 's,[@]reporting_server[@],$(REPORTING_SERVER),g' < $(srcdir)/$< > $@
 	chmod +x $@
 
 install-data-hook:
