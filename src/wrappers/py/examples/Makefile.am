@@ -41,5 +41,5 @@ endif
 
 install-data-hook:
 	for i in $(doc_examples_DATA); do \
-		chmod +x $(doc_examplesdir)/$$i; \
+		chmod +x $(DESTDIR)$(doc_examplesdir)/$$i; \
 	done
