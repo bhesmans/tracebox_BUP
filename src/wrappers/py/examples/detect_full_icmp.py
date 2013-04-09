@@ -14,4 +14,4 @@ for ttl, res in do_tracebox(probe).iteritems():
     if not res:
         continue
     if res.is_full_reply() and not res.is_srv_reply():
-        print res.router()
+        print ttl, res.router()
