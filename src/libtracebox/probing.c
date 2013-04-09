@@ -38,10 +38,11 @@ struct probing {
 	int			 pcapfd;
 	int			 timeout;
 	ip_t			*sendfd;
+	struct addr		 dst_addr;
+	uint16_t		 port;
 };
 
-static int probing_pcap_init(probing_t *probing, const char *iface,
-			     const struct addr *ip, uint16_t port)
+static int probing_pcap_init(probing_t *probing, const char *iface)
 {
 	char			pcap_errbuf[PCAP_ERRBUF_SIZE];
 	char			filter_exp[255];
@@ -57,8 +58,9 @@ static int probing_pcap_init(probing_t *probing, const char *iface,
 	if (!probing->pcap)
 		return(-1);
 
-	addr_ntop(ip, addr_buf, sizeof(addr_buf));
-	sprintf(filter_exp, pcap_filter, "ip", addr_buf, port, addr_buf, port);
+	addr_ntop(&probing->dst_addr, addr_buf, sizeof(addr_buf));
+	sprintf(filter_exp, pcap_filter, "ip", addr_buf, probing->port,
+		addr_buf, probing->port);
 
 	ret = pcap_compile(probing->pcap, &fp, filter_exp, 0, net);
 	if (ret < 0)
@@ -105,6 +107,8 @@ probing_t *probing_init(const struct intf_entry *iface,
 
 	probing->iface = iface;
 	probing->timeout = timeout;
+	memcpy(&probing->dst_addr, dst_addr, sizeof(*dst_addr));
+	probing->port = port;
 	probing->sendfd = ip_open();
 	if (!probing->sendfd)
 		goto error;
@@ -128,7 +132,7 @@ probing_t *probing_init(const struct intf_entry *iface,
 	}
 	#endif
 
-	if (probing_pcap_init(probing, iface->intf_name, dst_addr, port) < 0)
+	if (probing_pcap_init(probing, iface->intf_name) < 0)
 		goto error_pcap;
 	return probing;
 
@@ -167,34 +171,73 @@ static int probing_offset(probing_t *probing)
 	}
 }
 
+static int probing_is_valid(probing_t *probing, const uint8_t *reply, size_t len)
+{
+	struct ip_hdr	*ip = (struct ip_hdr *)reply;
+	struct ip_hdr	*in_ip;
+	struct tcp_hdr	*l4;
+	size_t		 offset = ip->ip_hl << 2;
+	struct addr	 dst_addr;
+
+	if (ip->ip_p != IP_PROTO_ICMP)
+		return 1;
+
+	offset += sizeof(struct icmp_hdr) + 4;
+	in_ip = (struct ip_hdr *)(reply + offset);
+
+	offset += in_ip->ip_hl << 2;
+	l4 = (struct tcp_hdr *)(reply + offset);
+
+	addr_pack(&dst_addr, ADDR_TYPE_IP, IP_ADDR_BITS, &in_ip->ip_dst,
+		  sizeof(in_ip->ip_dst));
+	return !addr_cmp(&dst_addr, &probing->dst_addr) &&
+	       ntohs(l4->th_sport) == probing->port;
+}
+
 int probing_recv(probing_t *probing, uint8_t **reply, size_t *len)
 {
 	int			 ret;
 	uint8_t			*packet;
 	struct pcap_pkthdr	 pcap_hdr;
 	struct timeval		 ts = {probing->timeout, 0};
+	struct timeval		 ts_start, ts_now;
 	fd_set			 read_fd;
 	int			 offset;
 
 	FD_ZERO(&read_fd);
 	FD_SET(probing->pcapfd, &read_fd);
 
+	if (gettimeofday(&ts_start, NULL) < 0)
+		return(-1);
+
 	for ( ; ; ) {
+		if (gettimeofday(&ts_now, NULL) < 0)
+			return(-1);
+
+		ts.tv_sec = probing->timeout - (ts_now.tv_sec - ts_start.tv_sec);
+		if (ts.tv_sec <= 0)
+			return(-1);
+
 		ret = select(probing->pcapfd+1, &read_fd, NULL, NULL, &ts);
 		if (ret <= 0)
 			return(-1);
 
 		packet = (uint8_t *)pcap_next(probing->pcap, &pcap_hdr);
 		if (!packet)
-			continue;
+			return(-1);
 
 		/* Skip link-layer header */
 		offset = probing_offset(probing);
 		if (offset < 0)
 			return(-1);
 
+		if (!probing_is_valid(probing, packet + offset,
+				      pcap_hdr.len - offset))
+			continue;
+
 		*reply = packet + offset;
 		*len = pcap_hdr.len - offset;
+
 		return(0);
 	}
 	return(-1);
