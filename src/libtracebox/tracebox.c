@@ -150,7 +150,7 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 				  &addr, sizeof(addr));
 			res[ttl].chg_start |= tbox_diff_packet(probe, len, pkt,
 							       pkt_len);
-			if (ppkt)
+			if (ppkt && addr_cmp(&dst_addr, &from))
 				res[ttl].chg_prev |= tbox_diff_packet(ppkt, plen,
 								      pkt, pkt_len);
 			else
