@@ -33,12 +33,12 @@ probe_wscale = probe_opt(("WScale", 15))
 probe_md5 = probe_opt((19, ''.join(chr(random.randint(0,255)) for _ in range(16))))
 probe_mptcp = probe_opt((30, mp_capable()))
 
-res_no_opt = do_tracebox(probe_no_opt)
+res_no_opt = get_tracebox(probe_no_opt)
 path_length = length(res_no_opt)
-res_mss = do_tracebox(probe_mss, max_ttl = path_length)
-res_wscale = do_tracebox(probe_wscale, max_ttl = path_length)
-res_md5 = do_tracebox(probe_md5, max_ttl = path_length)
-res_mptcp = do_tracebox(probe_mptcp, max_ttl = path_length)
+res_mss = get_tracebox(probe_mss, max_ttl = path_length)
+res_wscale = get_tracebox(probe_wscale, max_ttl = path_length)
+res_md5 = get_tracebox(probe_md5, max_ttl = path_length)
+res_mptcp = get_tracebox(probe_mptcp, max_ttl = path_length)
 
 mss_changed = wscale_changed = md5_changed = mptcp_changed =  False
 

@@ -12,7 +12,7 @@ probe = IP(dst=dest, proto="tcp", id=random.randint(0, 2**16-1)) / \
 
 last_res = None
 changed = False
-for ttl, res in do_tracebox(probe).iteritems():
+for ttl, res in do_tracebox(probe):
     if not res:
         continue
     if res.ip_id_changed() and not last_res.is_srv_reply():

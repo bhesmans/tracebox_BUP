@@ -12,7 +12,7 @@ probe = IP(dst=dest, tos = 0x2, proto="tcp") / \
 
 last_res = None
 changed = False
-for ttl, res in do_tracebox(probe).iteritems():
+for ttl, res in do_tracebox(probe):
     if not res:
         continue
     if res.ecn_changed() and not res.is_srv_reply():
@@ -35,7 +35,7 @@ probe = IP(dst=dest, tos = 0x3, proto="tcp") / \
 
 last_res = None
 changed = False
-for ttl, res in do_tracebox(probe).iteritems():
+for ttl, res in do_tracebox(probe):
     if not res:
         continue
     if res.ecn_changed() and not res.is_srv_reply():
@@ -59,7 +59,7 @@ probe = IP(dst=dest, proto="tcp") / \
 
 last_res = None
 changed = False
-for ttl, res in do_tracebox(probe).iteritems():
+for ttl, res in do_tracebox(probe):
     if not res:
         continue
     if res.tcp_flags_changed() and not res.is_srv_reply():

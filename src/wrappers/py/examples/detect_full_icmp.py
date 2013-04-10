@@ -10,7 +10,7 @@ probe = IP(dst=dest, proto="tcp") / \
             sport=random.randint(0, 2**16-1),
             dport=dport, flags="S").build()
 
-for ttl, res in do_tracebox(probe).iteritems():
+for ttl, res in do_tracebox(probe):
     if not res:
         continue
     if res.is_full_reply() and not res.is_srv_reply():

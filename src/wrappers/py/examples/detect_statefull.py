@@ -25,7 +25,7 @@ probe3 = IP(dst=dest, proto="tcp") / \
 
 def length(res):
     last_r = 1
-    for ttl, r in res.iteritems():
+    for ttl, r in res:
         if r and r.is_srv_reply():
             return ttl
         if r:
@@ -35,7 +35,7 @@ def length(res):
 srv_ttl = length(do_tracebox(probe1))
 
 # avoid reaching the destination -> creation of state in middlebox
-res = do_tracebox(probe2, max_ttl = srv_ttl - 1)
+res = get_tracebox(probe2, max_ttl = srv_ttl - 1)
 
 # try to send a probe for the same 5-tuple but with a smaller seq num -> should be dropped by the middlebox
 lp3 = length(do_tracebox(probe3))

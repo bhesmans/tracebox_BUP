@@ -12,7 +12,7 @@ probe = IP(dst=dest, proto="tcp") / \
 
 last_res = None
 changed = False
-for ttl, res in do_tracebox(probe).iteritems():
+for ttl, res in do_tracebox(probe):
     if not res:
         continue
     if res.tcp_seq_changed():

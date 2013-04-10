@@ -11,14 +11,14 @@ probe = IP(dst=dest, proto="tcp") / \
             dport=dport, flags="S").build()
 
 def length(res):
-    for ttl, r in res.iteritems():
+    for ttl, r in res:
         if r and r.is_srv_reply():
             return ttl
     return None
 
 def length2(res):
     last_r = 1
-    for ttl, r in res.iteritems():
+    for ttl, r in res:
         if r and r.is_srv_reply():
             return ttl
         if r:
@@ -29,6 +29,7 @@ def length2(res):
 tcp_ttl = length(do_tracebox(probe))
 if not tcp_ttl:
     print "The server did not replied to the probe: we are unable to detect any proxy."
+    sys.exit(0)
 
 # generate a UDP probe and look if the last reply is farther than TCP
 probe2 = IP(dst=dest, proto="udp") / \

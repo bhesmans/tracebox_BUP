@@ -139,9 +139,36 @@ static PyTypeObject ProbeResult_Type = {
 
 
 static char *kwlist[] = { "probe", "iface", "min_ttl", "max_ttl", "nprobes",
-			  "timeout", "noreply", "dump", NULL };
+			  "timeout", "noreply", "dump", "callback", NULL };
 
 static PyObject *dump_func = NULL;
+static PyObject *cb_func = NULL;
+
+static PyObject *build_tbox_res(int ttl, const tbox_res_t *res)
+{
+	if (res->sent_probes && res->recv_probes) {
+		ProbeResult *probe = PyObject_NEW(ProbeResult, &ProbeResult_Type);
+		probe->ttl = ttl;
+		memcpy(&probe->res, res, sizeof(probe->res));
+		return (PyObject *)probe;
+	} else {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+}
+
+static PyObject *build_return(const tbox_conf_t *tbox, const tbox_res_t *res)
+{
+	int i;
+	PyObject *dict = PyDict_New();
+
+	for (i = tbox->min_ttl; i <= tbox->max_ttl; ++i) {
+		PyObject *key = Py_BuildValue("i", i);
+		PyObject *value = build_tbox_res(i, &res[i]);
+		PyDict_SetItem(dict, key, value);
+	}
+	return dict;
+}
 
 static void stub_dump(const uint8_t const *pkt, size_t len)
 {
@@ -152,27 +179,16 @@ static void stub_dump(const uint8_t const *pkt, size_t len)
 	PyEval_CallObject(dump_func, pkt_dump);
 }
 
-static PyObject *build_return(const tbox_conf_t *tbox, const tbox_res_t *res)
+static int stub_cb(int ttl, tbox_res_t *res)
 {
-	int i;
-	PyObject *dict = PyDict_New();
+	if (!cb_func)
+		return 0;
 
-	for (i = tbox->min_ttl; i <= tbox->max_ttl; ++i) {
-		PyObject *key = Py_BuildValue("i", i);
-		PyObject *value = Py_None;
+	PyObject *pyres = build_tbox_res(ttl, res);
+	PyObject *arg = Py_BuildValue("(iO)", ttl, pyres);
+	PyEval_CallObject(cb_func, arg);
 
-		if (res[i].sent_probes && res[i].recv_probes) {
-			ProbeResult *probe = PyObject_NEW(ProbeResult, &ProbeResult_Type);
-			
-			probe->ttl = i;
-			memcpy(&probe->res, &res[i], sizeof(probe->res));
-			value = (PyObject *) probe;
-		} else
-			Py_INCREF(Py_None);
-
-		PyDict_SetItem(dict, key, value);
-	}
-	return dict;
+	return 0;
 }
 
 static PyObject *tracebox_trace(PyObject *self, PyObject *args, PyObject *kwds)
@@ -181,26 +197,32 @@ static PyObject *tracebox_trace(PyObject *self, PyObject *args, PyObject *kwds)
 	int probe_len;
 	tbox_conf_t tbox = TBOX_DEFAULT;
 	tbox_res_t res[TBOX_HARD_TTL+1];
-	int ret;
+	int ret, test1, test2;
 	PyObject *dump = NULL;
+	PyObject *cb = NULL;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|siiiiiO", kwlist,
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|siiiiiOO", kwlist,
 					 &probe, &probe_len, &tbox.iface,
 					 &tbox.min_ttl, &tbox.max_ttl,
 					 &tbox.nprobes, &tbox.probe_timeo,
-					 &tbox.noreply, &dump))
-		return NULL; 
+					 &tbox.noreply, &dump, &cb))
+		return NULL;
 
 	if (dump && !PyCallable_Check(dump))
 		PyErr_SetString(PyExc_TypeError, "dump must be a callable object!");
 	dump_func = dump;
 
+	if (cb && !PyCallable_Check(cb))
+		PyErr_SetString(PyExc_TypeError, "callback must be a callable object!");
+	cb_func = cb;
+
 	memset(res, 0, sizeof(res));
-	ret = tracebox(probe, probe_len, res, 8, TBOX_IFACE, tbox.iface,
+	ret = tracebox(probe, probe_len, res, 9, TBOX_IFACE, tbox.iface,
 		       TBOX_MIN_TTL, tbox.min_ttl, TBOX_MAX_TTL, tbox.max_ttl,
 		       TBOX_NPROBES, tbox.nprobes, TBOX_PROBE_TIMEO,
 		       tbox.probe_timeo, TBOX_NOREPLY, tbox.noreply,
-		       TBOX_SENT_CB, stub_dump, TBOX_RECV_CB, stub_dump);
+		       TBOX_SENT_CB, stub_dump, TBOX_RECV_CB, stub_dump,
+		       TBOX_CB, stub_cb);
 	return build_return(&tbox, res);
 }
  
@@ -209,7 +231,7 @@ static PyMethodDef TraceboxMethods[] = {
 	{ NULL, NULL, 0, NULL }
 };
 
-PyMODINIT_FUNC inittracebox()
+PyMODINIT_FUNC init_tracebox()
 {
-	Py_InitModule("tracebox", TraceboxMethods);
+	Py_InitModule("_tracebox", TraceboxMethods);
 }

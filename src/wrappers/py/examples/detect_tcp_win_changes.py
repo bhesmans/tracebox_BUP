@@ -19,7 +19,7 @@ probe_max_win = IP(dst=dest, proto="tcp") / \
 last_res = None
 changed = False
 for probe in [probe_min_win, probe_max_win]:
-    for ttl, res in do_tracebox(probe).iteritems():
+    for ttl, res in do_tracebox(probe):
         if not res:
             continue
         if res.tcp_rwin_changed():
