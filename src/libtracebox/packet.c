@@ -24,6 +24,29 @@
 #define tcp_hdrlen(tcp)	((tcp)->th_off << 2)
 #define min(a,b)	(a > b ? b : a)
 
+uint8_t *tbox_trim_pkt(uint8_t *pkt, size_t *len, uint32_t *from)
+{
+	struct ip_hdr	*ip = (struct ip_hdr *)pkt;
+	size_t		 off = ip->ip_hl << 2;
+
+	if (from)
+		*from = ip->ip_src;
+
+	if (ip->ip_p == IPPROTO_ICMP) {
+		struct icmp_hdr *icmp = (struct icmp_hdr *)(pkt + off);
+
+		off += sizeof(*icmp) + 4;
+		pkt += off;
+		*len -= off;
+
+		/* Check if ICMP Multipart is present: */
+		ip = (struct ip_hdr *)(pkt);
+		if (ntohs(ip->ip_len) < (uint16_t)*len)
+			*len = ntohs(ip->ip_len);
+	}
+	return pkt;
+}
+
 uint32_t diff_udp(const struct udp_hdr *orig, size_t orig_len,
 		  const struct udp_hdr *other, size_t other_len)
 {
@@ -136,8 +159,8 @@ uint32_t diff_ip(const struct ip_hdr *orig, size_t orig_len,
 	return flags;
 }
 
-uint32_t diff_packet(const uint8_t *orig, size_t orig_len,
-		     const uint8_t *other, size_t other_len)
+uint32_t tbox_diff_packet(const uint8_t *orig, size_t orig_len,
+			  const uint8_t *other, size_t other_len)
 {
 	struct ip_hdr *orig_ip = (struct ip_hdr *)orig;
 	struct ip_hdr *other_ip = (struct ip_hdr *)other;

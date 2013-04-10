@@ -66,28 +66,6 @@ error:
 	return(-1);
 }
 
-static uint8_t *tbox_parse_pkt(uint8_t *pkt, size_t *len, struct addr *from)
-{
-	struct ip_hdr	*ip = (struct ip_hdr *)pkt;
-	size_t		 off = ip->ip_hl << 2;
-
-	addr_pack(from, ADDR_TYPE_IP, IP_ADDR_BITS, &ip->ip_src, sizeof(ip->ip_src));
-
-	if (ip->ip_p == IPPROTO_ICMP) {
-		struct icmp_hdr *icmp = (struct icmp_hdr *)(pkt + off);
-
-		off += sizeof(*icmp) + 4;
-		pkt += off;
-		*len -= off;
-
-		/* Check if ICMP Multipart is present: */
-		ip = (struct ip_hdr *)(pkt );
-		if (ntohs(ip->ip_len) < *len)
-			*len = ntohs(ip->ip_len);
-	}
-	return pkt;
-}
-
 static int cont;
 
 static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
@@ -147,6 +125,7 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 		for (p = 0; p < tbox->nprobes && cont; ++p) {
 			uint8_t	*pkt;
 			size_t	 pkt_len;
+			uint32_t addr;
 
 			if (tbox->pkt_sent_cb)
 				tbox->pkt_sent_cb(probe, len);
@@ -166,12 +145,14 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 			if (tbox->pkt_recv_cb)
 				tbox->pkt_recv_cb(pkt, pkt_len);
 
-			pkt = tbox_parse_pkt(pkt, &pkt_len, &from);
-			res[ttl].chg_start |= diff_packet(probe, len, pkt,
-							  pkt_len);
+			pkt = tbox_trim_pkt(pkt, &pkt_len, &addr);
+			addr_pack(&from, ADDR_TYPE_IP, IP_ADDR_BITS,
+				  &addr, sizeof(addr));
+			res[ttl].chg_start |= tbox_diff_packet(probe, len, pkt,
+							       pkt_len);
 			if (ppkt)
-				res[ttl].chg_prev |= diff_packet(ppkt, plen,
-								 pkt, pkt_len);
+				res[ttl].chg_prev |= tbox_diff_packet(ppkt, plen,
+								      pkt, pkt_len);
 			else
 				res[ttl].chg_prev |= res[ttl].chg_start;
 			res[ttl].chg_start |= (len <= pkt_len ? FULL_REPLY : 0);

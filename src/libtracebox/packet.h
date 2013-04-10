@@ -52,7 +52,8 @@ enum packet_change_t {
 	SRV_REPLY	= 1 << 31,
 };
 
-uint32_t diff_packet(const uint8_t *orig, size_t orig_len,
-		     const uint8_t *other, size_t other_len);
+uint8_t *tbox_trim_pkt(uint8_t *pkt, size_t *len, uint32_t *from);
+uint32_t tbox_diff_packet(const uint8_t *orig, size_t orig_len,
+			  const uint8_t *other, size_t other_len);
 
 #endif

@@ -1,9 +1,11 @@
 #include <arpa/inet.h>
 #include <Python.h>
 
+#include "libtracebox/dnet_compat.h"
 #include "libtracebox/tracebox.h"
 #include "libtracebox/packet.h"
 
+#define min(a,b)	(a > b ? b : a)
 
 staticforward PyTypeObject ProbeResult_Type;
 
@@ -137,10 +139,6 @@ static PyTypeObject ProbeResult_Type = {
 	"Probe result",				/*tp_doc*/
 };
 
-
-static char *kwlist[] = { "probe", "iface", "min_ttl", "max_ttl", "nprobes",
-			  "timeout", "noreply", "dump", "callback", NULL };
-
 static PyObject *dump_func = NULL;
 static PyObject *cb_func = NULL;
 
@@ -200,6 +198,8 @@ static PyObject *tracebox_trace(PyObject *self, PyObject *args, PyObject *kwds)
 	int ret, test1, test2;
 	PyObject *dump = NULL;
 	PyObject *cb = NULL;
+	char *kwlist[] = { "probe", "iface", "min_ttl", "max_ttl", "nprobes",
+			   "timeout", "noreply", "dump", "callback", NULL };
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s#|siiiiiOO", kwlist,
 					 &probe, &probe_len, &tbox.iface,
@@ -225,9 +225,41 @@ static PyObject *tracebox_trace(PyObject *self, PyObject *args, PyObject *kwds)
 		       TBOX_CB, stub_cb);
 	return build_return(&tbox, res);
 }
- 
+
+static PyObject *tracebox_replay(PyObject *self, PyObject *args, PyObject *kwds)
+{
+	uint8_t *probe, *reply, *prev = NULL;
+	int ttl, probe_len, reply_len, prev_len;
+	tbox_res_t res;
+	char *kwlist[] = { "probe", "reply", "prev_reply", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "is#s#|s#", kwlist, &ttl,
+					 &probe, &probe_len, &reply, &reply_len,
+					 &prev, &prev_len))
+		return NULL;
+
+	res.sent_probes = res.recv_probes = 1;
+	res.probe_len = min(probe_len, TBOX_PKT_SIZE);
+	memcpy(res.probe, probe, res.probe_len);
+
+	reply = tbox_trim_pkt(reply, (size_t *)&reply_len, &res.from);
+	res.reply_len = min(reply_len, TBOX_PKT_SIZE);
+	memcpy(res.reply, reply, res.reply_len);
+
+	res.chg_start = tbox_diff_packet(probe, res.probe_len, reply, res.reply_len);
+	res.chg_start |= (res.probe_len <= res.reply_len ? FULL_REPLY : 0);
+	res.chg_prev = res.chg_start;
+	if (prev) {
+		prev = tbox_trim_pkt(prev, (size_t *)&prev_len, NULL);
+		res.chg_prev = tbox_diff_packet(prev, prev_len, reply, res.reply_len);
+	}
+
+	return build_tbox_res(ttl, &res);
+}
+
 static PyMethodDef TraceboxMethods[] = {
 	{ "trace", (PyCFunction)tracebox_trace, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "replay", (PyCFunction)tracebox_replay, METH_VARARGS|METH_KEYWORDS, NULL },
 	{ NULL, NULL, 0, NULL }
 };
 
