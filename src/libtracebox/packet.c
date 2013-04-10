@@ -71,7 +71,9 @@ uint32_t diff_tcp(const struct tcp_hdr *orig, size_t orig_len,
 		flags |= (orig->th_seq != other->th_seq ? TCP_SEQ : 0);
 	} else {
 		flags |= (orig->th_sport != other->th_dport ? L4_SPORT : 0);
-		flags |= (orig->th_seq != other->th_ack ? TCP_SEQ : 0);
+		if (other->th_flags & TH_ACK)
+			flags |= (ntohl(orig->th_seq) + 1 !=
+				  ntohl(other->th_ack) ? TCP_SEQ : 0);
 		flags |= SRV_REPLY;
 	}
 
