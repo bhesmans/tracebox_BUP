@@ -178,20 +178,34 @@ static int probing_is_valid(probing_t *probing, const uint8_t *reply, size_t len
 	struct tcp_hdr	*l4;
 	size_t		 offset = ip->ip_hl << 2;
 	struct addr	 dst_addr;
+	uint16_t	 port;
 
-	if (ip->ip_p != IP_PROTO_ICMP)
-		return 1;
+	switch (ip->ip_p) {
+	case IP_PROTO_TCP:
+	case IP_PROTO_UDP:
+		/* Handle replies from the destination */
+		l4 = (struct tcp_hdr *)(reply + offset);
+		port = ntohs(l4->th_dport);
+		addr_pack(&dst_addr, ADDR_TYPE_IP, IP_ADDR_BITS, &ip->ip_src,
+			  sizeof(in_ip->ip_src));
+		break;
+	case IP_PROTO_ICMP:
+		offset += sizeof(struct icmp_hdr) + 4;
+		in_ip = (struct ip_hdr *)(reply + offset);
 
-	offset += sizeof(struct icmp_hdr) + 4;
-	in_ip = (struct ip_hdr *)(reply + offset);
+		offset += in_ip->ip_hl << 2;
+		l4 = (struct tcp_hdr *)(reply + offset);
 
-	offset += in_ip->ip_hl << 2;
-	l4 = (struct tcp_hdr *)(reply + offset);
+		addr_pack(&dst_addr, ADDR_TYPE_IP, IP_ADDR_BITS, &in_ip->ip_dst,
+			  sizeof(in_ip->ip_dst));
+		port = ntohs(l4->th_sport);
+		break;
+	default:
+		return 0;
+	}
 
-	addr_pack(&dst_addr, ADDR_TYPE_IP, IP_ADDR_BITS, &in_ip->ip_dst,
-		  sizeof(in_ip->ip_dst));
 	return !addr_cmp(&dst_addr, &probing->dst_addr) &&
-	       ntohs(l4->th_sport) == probing->port;
+	       port == probing->port;
 }
 
 int probing_recv(probing_t *probing, uint8_t **reply, size_t *len)
