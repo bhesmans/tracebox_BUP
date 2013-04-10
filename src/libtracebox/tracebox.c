@@ -189,6 +189,10 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 			noreply++;
 
 		res[ttl].from = from.addr_ip;
+
+		if (tbox->hop_cb && tbox->hop_cb(ttl, &res[ttl]))
+			break;
+
 		if (!addr_cmp(&dst_addr, &from))
 			break;
 	}
@@ -225,6 +229,7 @@ int tracebox(uint8_t *probe, size_t len, tbox_res_t *res, int nopts, ...)
 		TBOX_PARSE_OPT(TBOX_NOREPLY,	noreply);
 		TBOX_PARSE_OPT(TBOX_SENT_CB,	pkt_sent_cb);
 		TBOX_PARSE_OPT(TBOX_RECV_CB,	pkt_recv_cb);
+		TBOX_PARSE_OPT(TBOX_CB,		hop_cb);
 
 		error("Unknown option %d.", opt);
 		return(-1);

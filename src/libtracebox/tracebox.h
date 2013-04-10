@@ -35,31 +35,8 @@ typedef enum {
 	TBOX_NOREPLY,
 	TBOX_SENT_CB,
 	TBOX_RECV_CB,
+	TBOX_CB,
 } tbox_opt_t;
-
-typedef void (*tbox_cb_t)(const uint8_t const *pkt, size_t len);
-
-typedef struct {
-	const char	*iface;
-	int		 min_ttl;
-	int		 max_ttl;
-	int		 nprobes;
-	int		 probe_timeo;
-	int		 noreply;
-	tbox_cb_t	 pkt_sent_cb;
-	tbox_cb_t	 pkt_recv_cb;
-} tbox_conf_t;
-
-#define TBOX_DEFAULT (tbox_conf_t) { \
-	.iface		= NULL, \
-	.min_ttl	= 1, \
-	.max_ttl	= TBOX_HARD_TTL, \
-	.nprobes	= 3, \
-	.probe_timeo	= 3, \
-	.noreply	= 3, \
-	.pkt_sent_cb	= NULL, \
-	.pkt_recv_cb	= NULL, \
-}
 
 typedef struct {
 	uint32_t	from;
@@ -72,6 +49,33 @@ typedef struct {
 	uint8_t		reply[TBOX_PKT_SIZE];
 	size_t		reply_len;
 } tbox_res_t;
+
+typedef void (*tbox_rw_cb_t)(const uint8_t const *pkt, size_t len);
+typedef int (*tbox_cb_t)(int ttl, tbox_res_t *res);
+
+typedef struct {
+	const char	*iface;
+	int		 min_ttl;
+	int		 max_ttl;
+	int		 nprobes;
+	int		 probe_timeo;
+	int		 noreply;
+	tbox_rw_cb_t	 pkt_sent_cb;
+	tbox_rw_cb_t	 pkt_recv_cb;
+	tbox_cb_t	 hop_cb;
+} tbox_conf_t;
+
+#define TBOX_DEFAULT (tbox_conf_t) { \
+	.iface		= NULL, \
+	.min_ttl	= 1, \
+	.max_ttl	= TBOX_HARD_TTL, \
+	.nprobes	= 3, \
+	.probe_timeo	= 3, \
+	.noreply	= 3, \
+	.pkt_sent_cb	= NULL, \
+	.pkt_recv_cb	= NULL, \
+	.hop_cb		= NULL, \
+}
 
 int tracebox(uint8_t *probe, size_t len, tbox_res_t *res, int nopts, ...);
 

@@ -39,7 +39,7 @@ static int		 option_type = -1;
 static struct addr	 ip_dst;
 static pcap_t		*pcap = NULL;
 static pcap_dumper_t	*dumper = NULL;
-
+static int		 resolve = 1;
 
 static struct {
 	u_char option_type;
@@ -197,6 +197,31 @@ static void dump_pkt(const uint8_t const *pkt, size_t len)
 	pcap_dump((u_char *)dumper, &ph, pkt);
 }
 
+static int tbox_callback(int ttl, tbox_res_t *res)
+{
+	if (res->sent_probes == 0)
+		return 0;
+
+	if (!res->recv_probes)
+		printf("%2d: *\n", ttl);
+	else {
+		struct addr addr;
+		addr_pack(&addr, ADDR_TYPE_IP, IP_ADDR_BITS, &res->from,
+			  IP_ADDR_LEN);
+		if (resolve) {
+			char name[255];
+			resolve_addr(AF_INET, &addr, name, sizeof(name));
+			printf("%2d: %s (%s) ", ttl, name, addr_ntoa(&addr));
+		} else
+			printf("%2d: %s ", ttl, addr_ntoa(&addr));
+		change_str(res->chg_prev);
+		printf("\n");
+		fflush(stdout);
+	}
+
+	return 0;
+}
+
 static int close_dump(void)
 {
 	if (dumper) {
@@ -219,7 +244,6 @@ int main(int argc, char *argv[])
 	size_t		 pkt_len = sizeof(pkt);
 	uint8_t		 tcp_flags = TH_SYN;
 	char		*output_file = NULL;
-	int		 resolve = 1;
 
 	if (geteuid() != 0) {
 		error("%s can only be used as root", argv[0]);
@@ -295,33 +319,11 @@ int main(int argc, char *argv[])
 	generate_probe(pkt, &pkt_len);
 
 	memset(res, 0, sizeof(res));
-	ret = tracebox(pkt, pkt_len, res, 4,
+	ret = tracebox(pkt, pkt_len, res, 5,
 		       TBOX_IFACE, iface_set ? iface : NULL,
-		       TBOX_MAX_TTL, hops_max,
-		       TBOX_SENT_CB, dump_pkt, TBOX_RECV_CB, dump_pkt);
+		       TBOX_MAX_TTL, hops_max, TBOX_SENT_CB, dump_pkt,
+		       TBOX_RECV_CB, dump_pkt, TBOX_CB, tbox_callback);
 	close_dump();
-
-	for (i = 0; i < sizeof(res) / sizeof(res[0]); ++i) {
-		if (res[i].sent_probes == 0)
-			continue;
-
-		if (!res[i].recv_probes)
-			printf("%2d: *\n", i);
-		else {
-			struct addr addr;
-			addr_pack(&addr, ADDR_TYPE_IP, IP_ADDR_BITS, &res[i].from,
-				  IP_ADDR_LEN);
-			if (resolve) {
-				char name[255];
-				resolve_addr(AF_INET, &addr, name, sizeof(name));
-				printf("%2d: %s (%s) ", i, name, addr_ntoa(&addr));
-			} else
-				printf("%2d: %s ", i, addr_ntoa(&addr));
-			change_str(res[i].chg_prev);
-			printf("\n");
-		}
-
-	}
 
 	return(ret);
 usage:
