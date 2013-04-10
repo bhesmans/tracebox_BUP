@@ -34,7 +34,6 @@
 	fprintf(stderr, format "\n", ## args)
 
 static uint8_t		 hops_max = TBOX_HARD_TTL;
-static int		 resolve = 0;
 static uint16_t		 dport = 80;
 static int		 option_type = -1;
 static struct addr	 ip_dst;
@@ -117,6 +116,15 @@ static int resolve_host(int af, const char *host, struct addr *addr, char *name,
 	freeaddrinfo(res);
 
 	return 0;
+}
+
+static int resolve_addr(int af, struct addr *addr, char *name, size_t len)
+{
+	struct sockaddr_in sin;
+
+	addr_ntos(addr, (struct sockaddr *)&sin);
+	return getnameinfo((struct sockaddr*)&sin, sizeof(sin), name, len,
+			   NULL, 0, 0);
 }
 
 static int generate_probe(u_char *packet, size_t *len)
@@ -211,6 +219,7 @@ int main(int argc, char *argv[])
 	size_t		 pkt_len = sizeof(pkt);
 	uint8_t		 tcp_flags = TH_SYN;
 	char		*output_file = NULL;
+	int		 resolve = 1;
 
 	if (geteuid() != 0) {
 		error("%s can only be used as root", argv[0]);
@@ -278,9 +287,8 @@ int main(int argc, char *argv[])
 	if (output_file)
 		open_dump(output_file);
 
-	char buf[INET_ADDRSTRLEN];
-	addr_ntop(&ip_dst, buf, sizeof(buf));
-	printf("tracebox to %s (%s): %d hops max\n", addr_name, buf, hops_max);
+	printf("tracebox to %s (%s): %d hops max\n", addr_name,
+	       addr_ntoa(&ip_dst), hops_max);
 
 	probe_ip_setup(rand());
 	probe_tcp_setup(rand(), rand(), tcp_flags);
@@ -300,8 +308,15 @@ int main(int argc, char *argv[])
 		if (!res[i].recv_probes)
 			printf("%2d: *\n", i);
 		else {
-			struct in_addr addr = { .s_addr = res[i].from };
-			printf("%2d: %s ", i, inet_ntoa(addr));
+			struct addr addr;
+			addr_pack(&addr, ADDR_TYPE_IP, IP_ADDR_BITS, &res[i].from,
+				  IP_ADDR_LEN);
+			if (resolve) {
+				char name[255];
+				resolve_addr(AF_INET, &addr, name, sizeof(name));
+				printf("%2d: %s (%s) ", i, name, addr_ntoa(&addr));
+			} else
+				printf("%2d: %s ", i, addr_ntoa(&addr));
 			change_str(res[i].chg_prev);
 			printf("\n");
 		}
