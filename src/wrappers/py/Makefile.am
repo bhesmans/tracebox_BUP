@@ -12,7 +12,7 @@ _tracebox_la_SOURCES = \
 	pytracebox.c
 
 _tracebox_la_CFLAGS = \
-	-I ../../ \
+	-I$(top_srcdir)/src \
 	$(PYTHON_CFLAGS)
 
 _tracebox_la_LDFLAGS = \
