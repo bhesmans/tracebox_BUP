@@ -22,6 +22,8 @@ AC_CHECK_HEADER([pcap.h], [], [AC_MSG_ERROR([need libcap])])
 AC_CHECK_HEADER([dnet.h], [AC_DEFINE(HAVE_DNET)], [DNET="no"])
 AC_CHECK_HEADER([dumbnet.h], [AC_DEFINE(HAVE_DUMBNET)], [DUMBNET="no"])
 AC_PATH_PROG([DEBUILD], [dpkg-buildpackage], [notfound])
+AC_PATH_PROG([RPMBUILD], [rpmbuild], [notfound])
+AC_PATH_PROG([RPM], [rpm], [notfound])
 
 AS_IF([test "x$DNET" = "xno" || test "x$DUMBNET" = "xno"], [],
       [AC_MSG_ERROR([need libdnet])])
@@ -61,6 +63,20 @@ AC_ARG_ENABLE([deb],
 			[AC_MSG_ERROR([--enable-rpm and --enable-deb are mutually exclusive])])])],
 	[enable_deb=no])
 AM_CONDITIONAL([BUILDING_DEB], [test "x$enable_deb" = "xyes"])
+
+AC_ARG_ENABLE([rpm],
+	[AS_HELP_STRING([--enable-rpm=@<:@yes/no@:>@],
+		[Configure for building RPM package @<:@default=no@:>@ (requires rpmbuild)])],
+	[AS_IF([test "x$enable_rpm" = "xyes"],
+		[AS_IF([test "x$RPMBUILD" = "xnotfound"],
+			[AC_MSG_ERROR([rpmbuild is required for --enable-rpm])],
+		[test "x$enable_deb" = "xyes"],
+			[AC_MSG_ERROR([--enable-rpm and --enable-deb are mutually exclusive])])])],
+	[enable_rpm=no])
+AM_CONDITIONAL([BUILDING_RPM], [test "x$enable_rpm" = "xyes"])
+
+AC_ARG_VAR([RPM_RELEASE], [Release number to build RPMs with [1]])
+AS_IF([test "x$RPM_RELEASE" = "x"], [RPM_RELEASE=1])
 
 AM_CONDITIONAL(DUMBNET, test "x$DUMBNET" != "xno")
 AM_CONDITIONAL(WRAPPERS, test "x$enable_wrappers" != "xno")

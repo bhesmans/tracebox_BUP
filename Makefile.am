@@ -3,7 +3,9 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = src
 
-EXTRA_DIST = README.md
+EXTRA_DIST = \
+	README.md \
+	tracebox.spec
 
 build-dist: dist
 	case '$(DIST_ARCHIVES)' in \
@@ -91,5 +93,34 @@ deb: dist
 else
 deb:
 	@echo "To build a Debian package, you must run configure with --enable-deb."
+	@exit 1
+endif
+
+if BUILDING_RPM
+RPMDIR=`$(RPM) --eval %_rpmdir`
+SRCRPMDIR=`$(RPM) --eval %_srcrpmdir`
+RPMARCH=`$(RPM) --eval %_target_cpu`
+BINRPM = $(PACKAGE)-$(VERSION)-$(RPM_RELEASE).$(RPMARCH).rpm
+DEBUGRPM = $(PACKAGE)-debuginfo-$(VERSION)-$(RPM_RELEASE).$(RPMARCH).rpm
+SRCRPM = $(PACKAGE)-$(VERSION)-$(RPM_RELEASE).src.rpm
+rpm: dist
+	@echo "Building RPM package..."
+	@if $(RPMBUILD) -ta --clean $(PACKAGE)-$(VERSION).tar.gz; then \
+		if test -e $(RPMDIR)/$(BINRPM); then \
+			cp $(RPMDIR)/$(BINRPM) $(builddir); \
+		elif test -e $(RPMDIR)/$(RPMARCH)/$(BINRPM); then \
+			cp $(RPMDIR)/$(RPMARCH)/$(BINRPM) $(builddir); \
+		fi; \
+		test -e $(SRCRPMDIR)/$(SRCRPM) && \
+		cp $(SRCRPMDIR)/$(SRCRPM) $(builddir); \
+		if test -e $(RPMDIR)/$(DEBUGRPM); then \
+			cp $(RPMDIR)/$(DEBUGRPM) $(builddir); \
+		elif test -e $(RPMDIR)/$(RPMARCH)/$(DEBUGRPM); then \
+			cp $(RPMDIR)/$(RPMARCH)/$(DEBUGRPM) $(builddir); \
+		fi; \
+	fi
+else
+rpm:
+	@echo "To build an RPM package, you must run configure with --enable-rpm.";
 	@exit 1
 endif
