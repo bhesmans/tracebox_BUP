@@ -1,3 +1,9 @@
+tracebox (0.0-1.1) UNRELEASED; urgency=low
+
+  * Fix: dependancies
+
+ -- Gregory Detal <gdetal@nostromo.info.ucl.ac.be>  Fri, 12 Apr 2013 13:51:19 +0200
+
 tracebox (0.0-1) unstable; urgency=low
 
   * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>

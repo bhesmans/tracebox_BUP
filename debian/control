@@ -8,6 +8,6 @@ Homepage: http://www.tracebox.org
 
 Package: tracebox
 Architecture: all
-Depends:  ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
+Depends:  ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-argparse, python-scapy, python-pcapy
 Description: <insert up to 60 chars description>
  <insert long description, indented with spaces>
