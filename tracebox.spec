@@ -1,6 +1,6 @@
 Name:           tracebox
 Version:        0.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        -
 
 Group:          Applications/Internet
@@ -10,7 +10,7 @@ Source:         %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  libpcap-devel, libdnet-devel, python-devel
-Requires:       libpcap, libdnet, python-argparse, scapy
+Requires:       libpcap, libdnet, scapy, pcapy
 
 %description
 
