@@ -1,8 +1,8 @@
-tracebox (0.0-1.1) UNRELEASED; urgency=low
+tracebox (0.0-3) unstable; urgency=low
 
-  * Fix: dependancies
+  * Fix: dependencies
 
- -- Gregory Detal <gdetal@nostromo.info.ucl.ac.be>  Fri, 12 Apr 2013 13:51:19 +0200
+ -- Gregory Detal <gdetal@nostromo.info.ucl.ac.be>  Mon, 15 Apr 2013 08:37:09 +0200
 
 tracebox (0.0-1) unstable; urgency=low
 
