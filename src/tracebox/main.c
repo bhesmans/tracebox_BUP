@@ -27,6 +27,10 @@
 #include "libtracebox/tracebox.h"
 #include "libtracebox/dnet_compat.h"
 
+#ifdef HAVE_LUA
+#include "tracebox_lua.h"
+#endif
+
 #include "options.h"
 #include "probe.h"
 
@@ -234,7 +238,7 @@ int main(int argc, char *argv[])
 {
 	char		 iface[INTF_NAME_LEN];
 	char		 c;
-	int		 ret;
+	int		 ret = 0;
 	int		 iface_set = 0;
 	char		 addr_name[255];
 	int		 i;
@@ -244,6 +248,8 @@ int main(int argc, char *argv[])
 	size_t		 pkt_len = sizeof(pkt);
 	uint8_t		 tcp_flags = TH_SYN;
 	char		*output_file = NULL;
+	const char	*script_file = NULL;
+	const char	*command = NULL;
 
 	if (geteuid() != 0) {
 		error("%s can only be used as root", argv[0]);
@@ -252,7 +258,7 @@ int main(int argc, char *argv[])
 
 	srand(time(NULL) ^ getpid());
 
-	while ((c = getopt (argc, argv, ":i:m:o:O:p:f:M:hn")) != -1) {
+	while ((c = getopt (argc, argv, ":i:m:o:O:p:f:M:S:c:hn")) != -1) {
 		switch (c) {
 			case 'i':
 				strncpy(iface, optarg, INTF_NAME_LEN);
@@ -287,6 +293,14 @@ int main(int argc, char *argv[])
 							option_type = tcp_options[i].option_type;
 				}
 				break;
+#if HAVE_LUA
+			case 'S':
+				script_file = optarg;
+				break;
+			case 'c':
+				command = optarg;
+				break;
+#endif
 			case 'O':
 				output_file = optarg;
 				break;
@@ -308,22 +322,31 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (output_file)
-		open_dump(output_file);
+	if (command && script_file) {
+		error("You can only specify a script or a command, not both.");
+		exit(EXIT_FAILURE);
+	} else if (command) {
+		tracebox_lua_run(command);
+	} else if (script_file) {
+		tracebox_lua_load(script_file);
+	} else {
+		if (output_file)
+			open_dump(output_file);
 
-	printf("tracebox to %s (%s): %d hops max\n", addr_name,
-	       addr_ntoa(&ip_dst), hops_max);
+		printf("tracebox to %s (%s): %d hops max\n", addr_name,
+		       addr_ntoa(&ip_dst), hops_max);
 
-	probe_ip_setup(rand());
-	probe_tcp_setup(rand(), rand(), tcp_flags);
-	generate_probe(pkt, &pkt_len);
+		probe_ip_setup(rand());
+		probe_tcp_setup(rand(), rand(), tcp_flags);
+		generate_probe(pkt, &pkt_len);
 
-	memset(res, 0, sizeof(res));
-	ret = tracebox(pkt, pkt_len, res, 5,
-		       TBOX_IFACE, iface_set ? iface : NULL,
-		       TBOX_MAX_TTL, hops_max, TBOX_SENT_CB, dump_pkt,
-		       TBOX_RECV_CB, dump_pkt, TBOX_CB, tbox_callback);
-	close_dump();
+		memset(res, 0, sizeof(res));
+		ret = tracebox(pkt, pkt_len, res, 5,
+			       TBOX_IFACE, iface_set ? iface : NULL,
+			       TBOX_MAX_TTL, hops_max, TBOX_SENT_CB, dump_pkt,
+			       TBOX_RECV_CB, dump_pkt, TBOX_CB, tbox_callback);
+		close_dump();
+	}
 
 	return(ret);
 usage:
@@ -346,6 +369,10 @@ usage:
 "                              syn.\n"
 "  -M mss                      Specify the MSS to use when generating the TCP\n"
 "                              MSS option. Default is 9140.\n"
+#ifdef HAVE_LUA
+"  -S script                   Run a script.\n"
+"  -C cmd                      Execute a command.\n"
+#endif
 "", argv[0]);
 	exit(EXIT_FAILURE);
 }

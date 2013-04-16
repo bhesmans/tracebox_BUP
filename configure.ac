@@ -21,6 +21,7 @@ AC_CHECK_HEADER([net/bpf.h], [AC_DEFINE(HAVE_NET_BPF_H)], [])
 AC_CHECK_HEADER([pcap.h], [], [AC_MSG_ERROR([need libcap])])
 AC_CHECK_HEADER([dnet.h], [AC_DEFINE(HAVE_DNET)], [DNET="no"])
 AC_CHECK_HEADER([dumbnet.h], [AC_DEFINE(HAVE_DUMBNET)], [DUMBNET="no"])
+AC_CHECK_HEADER([lua.h], [], [LUA="no"])
 AC_PATH_PROG([DEBUILD], [dpkg-buildpackage], [notfound])
 AC_PATH_PROG([RPMBUILD], [rpmbuild], [notfound])
 AC_PATH_PROG([RPM], [rpm], [notfound])
@@ -42,6 +43,18 @@ AS_IF([test "x$enable_wrappers" != "xno"], [
 	AC_SUBST([PYTHON_LIBS])
 	AC_SUBST([PYTHON_CFLAGS])
 ])
+
+AC_ARG_ENABLE(scripts,
+	      AS_HELP_STRING([--disable-scripts], [Disable scripts]))
+
+AS_IF([test "x$enable_scripts" != "xno"], [
+	AS_IF([test "x$LUA" = "xno"],
+		[AC_MSG_ERROR(need Lua)],
+		[AC_DEFINE(HAVE_LUA)]
+	)
+])
+
+AM_CONDITIONAL([ENABLE_LUA], [test "x$enable_scripts" != "xno" && test "x$LUA" != "xno"])
 
 AC_ARG_ENABLE([reporting],
 	    AS_HELP_STRING([--enable-reporting=DIR], [Enable reporting]),
