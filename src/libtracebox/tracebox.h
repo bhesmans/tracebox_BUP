@@ -69,8 +69,8 @@ typedef struct {
 	.iface		= NULL, \
 	.min_ttl	= 1, \
 	.max_ttl	= TBOX_HARD_TTL, \
-	.nprobes	= 3, \
-	.probe_timeo	= 3, \
+	.nprobes	= 1, \
+	.probe_timeo	= 1, \
 	.noreply	= 3, \
 	.pkt_sent_cb	= NULL, \
 	.pkt_recv_cb	= NULL, \
