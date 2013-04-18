@@ -1,6 +1,6 @@
 Name:           tracebox
 Version:        0.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        -
 
 Group:          Applications/Internet
@@ -19,7 +19,7 @@ Requires:       libpcap, libdnet, scapy, pcapy
 %setup -q
 
 %build
-%configure
+%configure --disable-scripts
 make %{?_smp_mflags}
 
 
