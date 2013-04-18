@@ -19,7 +19,7 @@ if ENABLE_LUA
 tracebox_CPPFLAGS += -I$(top_srcdir)/src/libnet/lua/
 endif
 
-tracebox_LDADD = ../libtracebox/libtracebox.la
+tracebox_LDADD = ../libtracebox/libtracebox.la -lpcap
 if ENABLE_LUA
 tracebox_LDADD += -llua -lnet
 endif
