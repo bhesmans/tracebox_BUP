@@ -33,9 +33,10 @@ if not tcp_ttl:
 
 # generate a UDP probe and look if the last reply is farther than TCP
 probe2 = IP(dst=dest, proto="udp") / \
-        UDP(sport=random.randint(0, 2**16-1),
-            dport=53).build()
-udp_ttl = length2(do_tracebox(probe2))
+        TCP(seq=random.randint(0, 2**32-1),
+            sport=random.randint(0, 2**16-1),
+            dport=22, flags="S").build()
+tcp2_ttl = length2(do_tracebox(probe2))
 
-if udp_ttl > tcp_ttl:
+if tcp2_ttl > tcp_ttl:
     print "There is a proxy between you and the destination."
