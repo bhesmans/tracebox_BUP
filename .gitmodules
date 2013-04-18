@@ -1,3 +1,6 @@
 [submodule "src/libnet"]
 	path = src/libnet
 	url = git://github.com/sam-github/libnet.git
+[submodule "test/click"]
+	path = test/click
+	url = https://bhesmans@bitbucket.org/bhesmans/click.git

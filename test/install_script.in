@@ -1,0 +1,21 @@
+#!/bin/bash
+
+#two args, 
+#	first arg, should be the relative path from home to the folder that contains the tar that contains tracebox
+#	second, the name of the tar (without the extension)
+
+dir="@src_dir@"
+dist="@dist_name@"
+home="@home@"
+
+rm -rf /root/*
+cp /hosthome/${dir#${home}}/${dist}.tar.gz /root/
+
+cd /root/
+tar -zxvf ${dist}.tar.gz
+cd ${dist}
+
+./configure --prefix=/usr --disable-scripts
+make
+make install
+
