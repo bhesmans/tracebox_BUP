@@ -102,5 +102,6 @@ AC_CONFIG_FILES([
 	src/wrappers/Makefile
 	src/wrappers/py/Makefile
 	src/wrappers/py/examples/Makefile
+	test/Makefile
 ])
 AC_OUTPUT

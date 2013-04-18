@@ -1,0 +1,10 @@
+#!/bin/bash
+
+SRCDIR="@src_dir@"
+RELDIR=${SRCDIR#${HOME}}
+
+cd ${SRCDIR}/test/click/script/pyScript/
+rm -f Client.disk
+python main.py -x -a -d -q -f ${SRCDIR}/test/test-fs -s ${RELDIR}/test/scripts/test_tracebox.sh -z ${RELDIR}/test/install_script reg 
+diff ${SRCDIR}/test/scripts/test_tracebox.out out/out > /dev/null || exit 1
+
