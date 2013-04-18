@@ -32,7 +32,7 @@ if not tcp_ttl:
     sys.exit(0)
 
 # generate a UDP probe and look if the last reply is farther than TCP
-probe2 = IP(dst=dest, proto="udp") / \
+probe2 = IP(dst=dest, proto="tcp") / \
         TCP(seq=random.randint(0, 2**32-1),
             sport=random.randint(0, 2**16-1),
             dport=22, flags="S").build()
