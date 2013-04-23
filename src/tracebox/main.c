@@ -147,27 +147,27 @@ static int generate_probe(u_char *packet, size_t *len)
 	return 0;
 }
 
-static const char *change_str(uint32_t chg)
+static const char *change_str(tbox_res_t *res)
 {
-	if (chg & IP_DSCP)
+	if (res->chg_prev & IP_DSCP)
 		printf("[DSCP changed] ");
-	if (chg & IP_ID)
+	if (res->chg_prev & IP_ID)
 		printf("[IP ID] ");
-	if (chg & IP_TLEN_INCR)
+	if (res->chg_prev & IP_TLEN_INCR)
 		printf("[TCP/IP option added] ");
-	if (chg & IP_FRAG)
+	if (res->chg_prev & IP_FRAG)
 		printf("[Fragmented] ");
-	if ((chg & L4_SPORT) || (chg & IP_SADDR))
+	if ((res->chg_prev & L4_SPORT) || (res->chg_prev & IP_SADDR))
 		printf("[NAT] ");
-	if (chg & TCP_SEQ)
+	if (res->chg_prev & TCP_SEQ)
 		printf("[TCP seq changed] ");
-	if ((chg & IP_TLEN_DECR) || ((chg & TCP_OPT) && !(chg & SRV_REPLY)))
+	if ((res->chg_prev & IP_TLEN_DECR) || ((res->chg_start & TCP_OPT) && !(res->chg_start & SRV_REPLY)))
 		printf("[TCP opt removed/changed] ");
-	if ((chg & TCP_OPT) && (chg & SRV_REPLY))
+	if ((res->chg_start & TCP_OPT) && (res->chg_start & SRV_REPLY))
 		printf("[Did not reply with opt] ");
-	if (chg & TCP_WIN)
+	if (res->chg_start & TCP_WIN)
 		printf("[TCP win changed] ");
-	if (chg & FULL_REPLY)
+	if (res->chg_start & FULL_REPLY)
 		printf("[Reply ICMP full pkt] ");
 }
 
@@ -218,7 +218,7 @@ static int tbox_callback(int ttl, tbox_res_t *res)
 			printf("%2d: %s (%s) ", ttl, name, addr_ntoa(&addr));
 		} else
 			printf("%2d: %s ", ttl, addr_ntoa(&addr));
-		change_str(res->chg_prev);
+		change_str(res);
 		printf("\n");
 		fflush(stdout);
 	}
