@@ -159,7 +159,7 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 
 			res[ttl].reply_len = min(pkt_len, TBOX_PKT_SIZE);
 			memcpy(res[ttl].reply, pkt, pkt_len);
-			ppkt = pkt;
+			ppkt = res[ttl].reply;
 			plen = pkt_len;
 			break;
 		}
