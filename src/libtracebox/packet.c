@@ -80,7 +80,7 @@ uint32_t diff_tcp(const struct tcp_hdr *orig, size_t orig_len,
 	if (other_len <= 8 || orig_len <= 8) /* Only received the first 64 bits of the header */
 		return flags;
 
-	flags |= (orig->th_flags != other->th_flags ? TCP_FLAGS : 0);
+	flags |= (!reply && orig->th_flags != other->th_flags ? TCP_FLAGS : 0);
 	flags |= (!reply && orig->th_off != other->th_off ? TCP_DOFF : 0);
 	flags |= (!reply && orig->th_win != other->th_win ? TCP_WIN : 0);
 
