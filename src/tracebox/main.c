@@ -44,6 +44,7 @@ static struct addr	 ip_dst;
 static pcap_t		*pcap = NULL;
 static pcap_dumper_t	*dumper = NULL;
 static int		 resolve = 1;
+static int		 output_format = 0;
 
 static struct {
 	u_char option_type;
@@ -171,6 +172,30 @@ static const char *change_str(tbox_res_t *res)
 		printf("[Reply ICMP full pkt] ");
 }
 
+static const char *flags_str(tbox_res_t *res)
+{
+#define test_flag(flags, flag) if (flags & flag) printf(#flag " ");
+	test_flag(res->chg_prev, IP_HLEN);
+	test_flag(res->chg_prev, IP_DSCP);
+	test_flag(res->chg_prev, IP_ECN);
+	test_flag(res->chg_prev, IP_TLEN_INCR);
+	test_flag(res->chg_prev, IP_TLEN_DECR);
+	test_flag(res->chg_prev, IP_ID);
+	test_flag(res->chg_prev, IP_FRAG);
+	test_flag(res->chg_prev, IP_SADDR);
+	test_flag(res->chg_prev, L4_SPORT);
+	test_flag(res->chg_prev, TCP_SEQ);
+	test_flag(res->chg_start, TCP_DOFF);
+	test_flag(res->chg_start, TCP_WIN);
+	test_flag(res->chg_start, TCP_OPT);
+	test_flag(res->chg_start, TCP_FLAGS);
+	test_flag(res->chg_start, UDP_LEN);
+	test_flag(res->chg_start, UDP_CHKSUM);
+	test_flag(res->chg_start, PAYLOAD);
+	test_flag(res->chg_start, FULL_REPLY);
+	test_flag(res->chg_start, SRV_REPLY);
+}
+
 static int open_dump(const char *file)
 {
 	pcap = pcap_open_dead(DLT_RAW, 65535);
@@ -201,11 +226,8 @@ static void dump_pkt(const uint8_t const *pkt, size_t len)
 	pcap_dump((u_char *)dumper, &ph, pkt);
 }
 
-static int tbox_callback(int ttl, tbox_res_t *res)
+static void tbox_print_classic(int ttl, tbox_res_t *res)
 {
-	if (res->sent_probes == 0)
-		return 0;
-
 	if (!res->recv_probes)
 		printf("%2d: *\n", ttl);
 	else {
@@ -222,6 +244,41 @@ static int tbox_callback(int ttl, tbox_res_t *res)
 		printf("\n");
 		fflush(stdout);
 	}
+}
+
+static void tbox_print_changes(int ttl, tbox_res_t *res)
+{
+	if (!res->recv_probes)
+		printf("%2d *:\n", ttl);
+	else {
+		struct addr addr;
+		addr_pack(&addr, ADDR_TYPE_IP, IP_ADDR_BITS, &res->from,
+			  IP_ADDR_LEN);
+		printf("%2d %s: ", ttl, addr_ntoa(&addr));
+		flags_str(res);
+		printf("\n");
+		fflush(stdout);
+	}
+}
+
+static void tbox_print(int ttl, tbox_res_t *res)
+{
+	switch (output_format) {
+	case 0:
+		tbox_print_classic(ttl, res);
+		break;
+	case 1:
+		tbox_print_changes(ttl, res);
+		break;
+	}
+}
+
+static int tbox_callback(int ttl, tbox_res_t *res)
+{
+	if (res->sent_probes == 0)
+		return 0;
+
+	tbox_print(ttl, res);
 
 	return 0;
 }
@@ -258,7 +315,7 @@ int main(int argc, char *argv[])
 
 	srand(time(NULL) ^ getpid());
 
-	while ((c = getopt (argc, argv, ":i:m:o:O:p:f:M:S:c:hn")) != -1) {
+	while ((c = getopt (argc, argv, ":i:m:o:O:p:f:M:S:c:hny")) != -1) {
 		switch (c) {
 			case 'i':
 				strncpy(iface, optarg, INTF_NAME_LEN);
@@ -303,6 +360,9 @@ int main(int argc, char *argv[])
 #endif
 			case 'O':
 				output_file = optarg;
+				break;
+			case 'y':
+				output_format = 1;
 				break;
 			case 'h':
 				goto usage;
