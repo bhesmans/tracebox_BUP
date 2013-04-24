@@ -155,8 +155,9 @@ static int tbox_loop(tbox_conf_t *tbox, uint8_t *probe, size_t len,
 								      pkt, pkt_len);
 			else
 				res[ttl].chg_prev |= res[ttl].chg_start;
-			res[ttl].chg_start |= (len <= pkt_len ? FULL_REPLY : 0);
 
+			if (!(res[ttl].chg_start & SRV_REPLY))
+				res[ttl].chg_start |= (len <= pkt_len ? FULL_REPLY : 0);
 			res[ttl].reply_len = min(pkt_len, TBOX_PKT_SIZE);
 			memcpy(res[ttl].reply, pkt, pkt_len);
 			ppkt = res[ttl].reply;
