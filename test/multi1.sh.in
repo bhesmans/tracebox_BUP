@@ -1,0 +1,26 @@
+#!/bin/bash
+
+source testCommon.sh
+
+#
+# rewrite the test to add param to tracebox
+#
+cat > ${TESTDIR}/scripts/test_tracebox.sh << EOF
+#!/bin/bash
+
+/usr/local/bin/tracebox -o mptcp -y -n 123.123.123.2
+
+EOF
+
+doTest " -o 1:r:LST30 -o 2:d:-10 -o 3:delta:-10 -o 4:delta:-10 reg/rmopt/cs/cw/ci/reg" multi1.out
+
+ret=$?
+
+cat > ${TESTDIR}/scripts/test_tracebox.sh << EOF
+#!/bin/bash
+
+/usr/local/bin/tracebox -y -n 123.123.123.2
+
+EOF
+
+exit $ret

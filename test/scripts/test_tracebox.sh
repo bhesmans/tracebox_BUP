@@ -1,3 +1,4 @@
 #!/bin/bash
 
-tracebox -n 123.123.123.2
+/usr/local/bin/tracebox -y -n 123.123.123.2
+

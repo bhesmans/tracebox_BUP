@@ -15,7 +15,7 @@ cd /root/
 tar -zxvf ${dist}.tar.gz
 cd ${dist}
 
-./configure --prefix=/usr --disable-scripts
+./configure --disable-scripts
 make
 make install
 

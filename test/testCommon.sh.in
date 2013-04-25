@@ -1,0 +1,39 @@
+#!/bin/bash
+
+SRCDIR="@src_dir@"
+RELDIR=${SRCDIR#${HOME}}
+TESTDIR=${SRCDIR}/test
+
+#
+# Params :
+#   1 : the line to test
+#	2 : the name of the file (located in scripts) that contains the expected output
+#	(3 : more parameters for the python script ?)
+#
+
+function doTest {
+	sec="$(date +%s)"
+	cd ${SRCDIR}/test/click/script/pyScript/
+	rm -rf out
+	python main.py $3 -y ${TESTDIR}/test-fs -d -x -a -f ${TESTDIR}/test-fs -s ${RELDIR}/test/scripts/test_tracebox.sh $1
+	elapsedSec="$(($(date +%s)-sec))"
+	echo -e "\ntest $1 finished in $elapsedSec sec"
+	diff ${TESTDIR}/scripts/$2 out/out > /dev/null || return 1
+	return 0
+}
+
+#
+# TODO : refact. do Simpletest etc
+#
+
+function doPythonTest {
+	sec="$(date +%s)"
+	cd ${SRCDIR}/test/click/script/pyScript/
+	rm -rf out
+	# TODO : simple way to update one script : do sed on test_pytracebox.sh
+	python main.py $3 -y ${TESTDIR}/test-fs -d -x -a -f ${TESTDIR}/test-fs -s ${RELDIR}/test/scripts/test_pytracebox.sh $1
+	elapsedSec="$(($(date +%s)-sec))"
+	echo -e "\ntest $1 finished in $elapsedSec sec"
+	diff ${TESTDIR}/scripts/$2 out/out > /dev/null || return 1
+	return 0
+}

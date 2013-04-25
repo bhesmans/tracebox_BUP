@@ -1,0 +1,6 @@
+#!/bin/bash
+
+source testCommon.sh
+
+doPythonTest " -o 0:ker:${TESTDIR}/test-vmlinux -o 0:fs:${TESTDIR}/test-fs tproxy/reg " test4.out
+exit $?

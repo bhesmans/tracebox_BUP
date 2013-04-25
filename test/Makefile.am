@@ -1,6 +1,12 @@
 
 TESTS = \
-	build.sh 
+	build.sh \
+	test2.sh \
+	test3.sh \
+	test4.sh \
+	test5.sh \
+	test6.sh \
+	multi1.sh 
 
 SUFFIXES = .sh .sh.in
 
@@ -8,7 +14,7 @@ SUFFIXES = .sh .sh.in
 	sed -e 's,[@]src_dir[@],$(abs_top_srcdir),g' < $(srcdir)/$< > $@
 	chmod +x $@
 
-$(TESTS): install_script
+$(TESTS): testCommon.sh install_script
 
 .PHONY: dist
 dist:
@@ -21,6 +27,10 @@ install_script: install_script.in dist test-fs
 
 test-fs:
 	@echo "Please retrieve and install the filesystem"
+	@exit 1
+
+test-vmlinux:
+	@echo "Please retrieve and install the kernel"
 	@exit 1
 
 CLEANFILES = $(TESTS)

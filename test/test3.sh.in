@@ -1,0 +1,6 @@
+#!/bin/bash
+
+source testCommon.sh
+
+doTest " -o 0:delta:-10 cw/reg " test3.out
+exit $?
