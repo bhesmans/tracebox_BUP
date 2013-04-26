@@ -6,7 +6,8 @@ TESTS = \
 	test4.sh \
 	test5.sh \
 	test6.sh \
-	multi1.sh 
+	multi1.sh \
+	multi2.sh 
 
 SUFFIXES = .sh .sh.in
 

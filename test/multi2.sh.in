@@ -1,0 +1,26 @@
+#!/bin/bash
+
+source testCommon.sh
+
+#
+# rewrite the test to add param to tracebox
+#
+cat > ${TESTDIR}/scripts/test_tracebox.sh << EOF
+#!/bin/bash
+
+/usr/local/bin/tracebox -o mss -y -n 123.123.123.2
+
+EOF
+
+doTest " -o 0:mssdelta:-10 -o 0:seqdelta:-10  -o 1:mtu:56 cmssandseq/limICMP/reg " multi2.out
+
+ret=$?
+
+cat > ${TESTDIR}/scripts/test_tracebox.sh << EOF
+#!/bin/bash
+
+/usr/local/bin/tracebox -y -n 123.123.123.2
+
+EOF
+
+exit $ret
