@@ -102,7 +102,7 @@ static inline void tcp_opt_pack(u_char type, u_char *u, size_t *len)
 	case TCP_OPT_TIMESTAMP:
 		*len = ts_pack(opt);
 		break;
-	case TCP_OPT_SACK:
+	case TCP_OPT_SACKOK:
 		*len = sack_pack(opt);
 		break;
 	default:
